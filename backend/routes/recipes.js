@@ -5,6 +5,9 @@ const path = require("path");
 
 const filePath = path.join(__dirname, "../data/recipes.json");
 
+
+
+
 function readRecipes() {
   const data = fs.readFileSync(filePath);
   return JSON.parse(data);
@@ -47,6 +50,7 @@ router.put("/:id", (req, res) => {
   res.json(recipes[index]);
 });
 
+
 router.delete("/:id", (req, res) => {
   let recipes = readRecipes();
   const index = recipes.findIndex(r => r.id === parseInt(req.params.id));
@@ -56,5 +60,28 @@ router.delete("/:id", (req, res) => {
   writeRecipes(recipes);
   res.json(deleted);
 });
+
+
+router.delete("/tags/:tag", (req, res) => {
+  const tagToDelete = req.params.tag;
+  let recipes = readRecipes();
+  let changed = false;
+
+  recipes = recipes.map(recipe => {
+    if (recipe.tags?.includes(tagToDelete)) {
+      changed = true;
+      return {
+        ...recipe,
+        tags: recipe.tags.filter(t => t !== tagToDelete)
+      };
+    }
+    return recipe;
+  });
+
+  if (changed) writeRecipes(recipes);
+  res.json({ success: true, removedTag: tagToDelete });
+});
+
+
 
 module.exports = router;
