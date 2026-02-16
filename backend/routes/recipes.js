@@ -51,17 +51,6 @@ router.put("/:id", (req, res) => {
 });
 
 
-router.delete("/:id", (req, res) => {
-  let recipes = readRecipes();
-  const index = recipes.findIndex(r => r.id === parseInt(req.params.id));
-  if (index === -1) return res.status(404).json({ error: "Recipe not found" });
-
-  const deleted = recipes.splice(index, 1)[0];
-  writeRecipes(recipes);
-  res.json(deleted);
-});
-
-
 router.delete("/tags/:tag", (req, res) => {
   const tagToDelete = req.params.tag;
   let recipes = readRecipes();
@@ -82,6 +71,17 @@ router.delete("/tags/:tag", (req, res) => {
   res.json({ success: true, removedTag: tagToDelete });
 });
 
+router.delete("/:id", (req, res) => {
+  let recipes = readRecipes();
+  const index = recipes.findIndex(r => r.id === parseInt(req.params.id));
+  if (index === -1) return res.status(404).json({ error: "Recipe not found" });
+
+  const deleted = recipes.splice(index, 1)[0];
+  writeRecipes(recipes);
+  res.json(deleted);
+});
+
 
 
 module.exports = router;
+
