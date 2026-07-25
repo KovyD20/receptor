@@ -8,12 +8,15 @@ function required(name) {
   return value;
 }
 
+const useSsl = process.env.DB_SSL === "true";
+
 const pool = new Pool({
   host: process.env.DB_HOST || "localhost",
   port: Number(process.env.DB_PORT || 5432),
   database: required("DB_NAME"),
   user: required("DB_USER"),
   password: required("DB_PASSWORD"),
+  ...(useSsl ? { ssl: { rejectUnauthorized: false } } : {}),
 });
 
 module.exports = pool;
