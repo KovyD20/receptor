@@ -119,14 +119,19 @@ export function useInventory(uid) {
     });
   };
 
+  const toggleShoppingItemDone = (item) =>
+    updateDoc(doc(db, "users", uid, "shoppingList", item.id), {
+      done: !item.done,
+    });
+
   const deleteShoppingItem = (item) =>
     deleteDoc(doc(db, "users", uid, "shoppingList", item.id));
 
-  const clearShoppingList = () =>
+  const clearDoneShoppingItems = () =>
     Promise.all(
-      shoppingList.map((item) =>
-        deleteDoc(doc(db, "users", uid, "shoppingList", item.id)),
-      ),
+      shoppingList
+        .filter((item) => item.done)
+        .map((item) => deleteDoc(doc(db, "users", uid, "shoppingList", item.id))),
     );
 
   const moveShoppingToFridge = async () => {
@@ -185,8 +190,9 @@ export function useInventory(uid) {
     addToShoppingList,
     addSingleShoppingItem,
     updateShoppingItem,
+    toggleShoppingItemDone,
     deleteShoppingItem,
-    clearShoppingList,
+    clearDoneShoppingItems,
     moveShoppingToFridge,
     addToFridge,
     deleteFridgeItem,
