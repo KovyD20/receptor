@@ -1,6 +1,7 @@
 
 require("dotenv").config();
 const pool = require("../db/pool");
+const { migrate } = require("./migrate");
 const { normalizeCatalogText } = require("../lib/normalize");
 const {
   PRIORITY_RANK,
@@ -114,6 +115,8 @@ function buildCatalog() {
 
 async function run() {
   const { categoryOrder, catalogByKey, aliasToEntry } = buildCatalog();
+
+  await migrate();
 
   const client = await pool.connect();
   try {

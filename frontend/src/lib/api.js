@@ -1,5 +1,11 @@
 import { auth } from "../firebase";
 
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
+
+export function apiUrl(path) {
+  return `${API_BASE}${path}`;
+}
+
 export async function authedFetch(path, options = {}) {
   const user = auth.currentUser;
   if (!user) {
@@ -12,5 +18,5 @@ export async function authedFetch(path, options = {}) {
     Authorization: `Bearer ${token}`,
   };
 
-  return fetch(path, { ...options, headers });
+  return fetch(apiUrl(path), { ...options, headers });
 }
