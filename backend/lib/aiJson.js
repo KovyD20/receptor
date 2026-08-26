@@ -36,6 +36,24 @@ function classifyGeminiError(err) {
     return notFoundErr;
   }
 
+  if (/\b503\b|UNAVAILABLE|high demand/i.test(message)) {
+    const busyErr = new Error("AI temporarily overloaded");
+    busyErr.status = 503;
+    return busyErr;
+  }
+
+  if (
+    /fetch failed|Request aborted when|The operation was aborted|terminated/i.test(message) ||
+    /\bUND_ERR_\w+/.test(message) ||
+    /\b(ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|ECONNREFUSED|UND_ERR_HEADERS_TIMEOUT)\b/.test(
+      `${message} ${err?.cause?.code || ""} ${err?.code || ""}`,
+    )
+  ) {
+    const timeoutErr = new Error("AI request timed out");
+    timeoutErr.status = 504;
+    return timeoutErr;
+  }
+
   return null;
 }
 
