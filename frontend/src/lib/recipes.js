@@ -9,6 +9,11 @@ function recipeTime(recipe) {
   return asNumber(recipe?.time ?? recipe?.time_minutes);
 }
 
+export function recipeTimeLabel(recipe) {
+  const minutes = recipeTime(recipe);
+  return minutes ? `${minutes} perc` : null;
+}
+
 export function recipeServings(recipe) {
   return asNumber(recipe?.servings) || 1;
 }
@@ -51,6 +56,41 @@ export function splitByFridge(ingredients, fridge, keyOf) {
   }
 
   return { have, missing };
+}
+
+export function recipeAvailability(recipe, fridge, keyOf) {
+  const total = recipe?.ingredients?.length || 0;
+  if (total === 0) return { have: 0, total: 0, ratio: 0 };
+  const { have } = splitByFridge(recipe.ingredients, fridge, keyOf);
+  return { have: have.length, total, ratio: have.length / total };
+}
+
+export function availabilityLevel(availability) {
+  const { have = 0, total = 0 } = availability || {};
+  if (total > 0 && have >= total) return "full";
+  if (have > 0) return "partial";
+  return "empty";
+}
+
+export function sortByAvailability(recipes, fridge, keyOf) {
+  return (recipes || [])
+    .map((recipe) => ({
+      recipe,
+      availability: recipeAvailability(recipe, fridge, keyOf),
+    }))
+    .sort((a, b) => {
+      if (b.availability.ratio !== a.availability.ratio) {
+        return b.availability.ratio - a.availability.ratio;
+      }
+      const missingA = a.availability.total - a.availability.have;
+      const missingB = b.availability.total - b.availability.have;
+      if (missingA !== missingB) return missingA - missingB;
+      return (a.recipe?.name || "").localeCompare(
+        b.recipe?.name || "",
+        "hu-HU",
+      );
+    })
+    .map((entry) => entry.recipe);
 }
 
 export function recipeMatchesSearch(recipe, term) {

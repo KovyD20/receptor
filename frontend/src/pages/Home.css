@@ -261,6 +261,16 @@
   padding-bottom: 2px;
 }
 
+.sort-row {
+  flex: none;
+  overflow: visible;
+}
+
+.view-head .sort-row {
+  padding-right: 14px;
+  border-right: 1px solid var(--line);
+}
+
 .chip {
   flex: none;
   padding: 7px 15px;
@@ -328,6 +338,19 @@
 .recipe-card-meta {
   font-size: 14px;
   color: var(--text-dim);
+}
+
+.recipe-card-avail {
+  font-weight: 600;
+}
+.recipe-card-avail.is-full {
+  color: var(--green);
+}
+.recipe-card-avail.is-partial {
+  color: var(--orange);
+}
+.recipe-card-avail.is-empty {
+  color: var(--text-mute);
 }
 
 .tag-pill {
