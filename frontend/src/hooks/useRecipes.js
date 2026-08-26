@@ -15,6 +15,8 @@ import { db } from "../firebase";
 export function useRecipes(uid) {
   const [recipes, setRecipes] = useState([]);
   const [allTags, setAllTags] = useState([]);
+  const [loadedUid, setLoadedUid] = useState(null);
+  const loading = Boolean(uid) && loadedUid !== uid;
 
   useEffect(() => {
     if (!uid) return;
@@ -28,8 +30,12 @@ export function useRecipes(uid) {
         const tags = new Set();
         items.forEach((item) => item.tags?.forEach((tag) => tags.add(tag)));
         setAllTags([...tags]);
+        setLoadedUid(uid);
       },
-      (err) => console.error("Hiba a receptek olvasásakor", err),
+      (err) => {
+        console.error("Hiba a receptek olvasásakor", err);
+        setLoadedUid(uid);
+      },
     );
 
     return () => unsub();
@@ -62,6 +68,7 @@ export function useRecipes(uid) {
   return {
     recipes,
     allTags,
+    recipesLoading: loading,
     addTag,
     createRecipe,
     updateRecipe,

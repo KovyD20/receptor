@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
 
@@ -11,6 +11,7 @@ import FridgeView from "../components/views/FridgeView";
 import NewRecipeView from "../components/views/NewRecipeView";
 import CookMode from "../components/views/CookMode";
 import NewRecipeForm from "../components/NewRecipeForm/NewRecipeForm";
+import LoadingBanner from "../components/LoadingBanner/LoadingBanner";
 
 import "./Home.css";
 import { SYSTEM_UNITS } from "../constants/units";
@@ -87,6 +88,7 @@ export default function Home({ user }) {
   const {
     recipes,
     allTags,
+    recipesLoading,
     addTag,
     createRecipe,
     updateRecipe,
@@ -97,6 +99,7 @@ export default function Home({ user }) {
   const {
     shoppingList,
     fridge,
+    inventoryLoading,
     groupedShoppingList,
     groupedFridge,
     missingRecommendations,
@@ -111,7 +114,13 @@ export default function Home({ user }) {
     deleteFridgeItem,
   } = useInventory(user.uid);
 
-  const { resolveCatalogKey } = useCatalog();
+  const {
+    resolveCatalogKey,
+    ready: catalogReady,
+    loading: catalogLoading,
+    error: catalogError,
+    reload: reloadCatalog,
+  } = useCatalog();
   const { showToast } = useToast();
   const confirm = useConfirm();
   const isMobile = useIsMobile();
@@ -127,6 +136,16 @@ export default function Home({ user }) {
   const [cooking, setCooking] = useState(false);
   const [cookStep, setCookStep] = useState(0);
   const searchInputRef = useRef(null);
+  const loadedToastShown = useRef(false);
+
+  const dataLoading = catalogLoading || recipesLoading || inventoryLoading;
+
+  useEffect(() => {
+    if (loadedToastShown.current) return;
+    if (!catalogReady || dataLoading) return;
+    loadedToastShown.current = true;
+    showToast("Adatok betöltve", "success");
+  }, [catalogReady, dataLoading, showToast]);
 
   const notifyError = (err, msg = "Hiba történt") => {
     console.error(err);
@@ -540,6 +559,12 @@ export default function Home({ user }) {
           </nav>
         )}
       </header>
+
+      <LoadingBanner
+        loading={dataLoading}
+        error={catalogError}
+        onRetry={reloadCatalog}
+      />
 
       <main className="app-main">{renderTab()}</main>
 

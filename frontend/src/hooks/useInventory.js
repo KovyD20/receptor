@@ -23,6 +23,10 @@ export function useInventory(uid) {
 
   const [shoppingList, setShoppingList] = useState([]);
   const [fridge, setFridge] = useState([]);
+  const [shopLoadedUid, setShopLoadedUid] = useState(null);
+  const [fridgeLoadedUid, setFridgeLoadedUid] = useState(null);
+  const shopLoading = Boolean(uid) && shopLoadedUid !== uid;
+  const fridgeLoading = Boolean(uid) && fridgeLoadedUid !== uid;
 
   const normalizeName = (value) =>
     resolveCatalogKey(stripAmountsAndUnits(value));
@@ -41,14 +45,26 @@ export function useInventory(uid) {
 
     const unsubShop = onSnapshot(
       query(shopRef, orderBy("name")),
-      (snap) => setShoppingList(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
-      (err) => console.error("Hiba a bevásárlólista olvasásakor", err),
+      (snap) => {
+        setShoppingList(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+        setShopLoadedUid(uid);
+      },
+      (err) => {
+        console.error("Hiba a bevásárlólista olvasásakor", err);
+        setShopLoadedUid(uid);
+      },
     );
 
     const unsubFridge = onSnapshot(
       query(fridgeRef, orderBy("name")),
-      (snap) => setFridge(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
-      (err) => console.error("Hiba a hűtő olvasásakor", err),
+      (snap) => {
+        setFridge(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+        setFridgeLoadedUid(uid);
+      },
+      (err) => {
+        console.error("Hiba a hűtő olvasásakor", err);
+        setFridgeLoadedUid(uid);
+      },
     );
 
     return () => {
@@ -184,6 +200,7 @@ export function useInventory(uid) {
   return {
     shoppingList,
     fridge,
+    inventoryLoading: shopLoading || fridgeLoading,
     groupedShoppingList,
     groupedFridge,
     missingRecommendations,
