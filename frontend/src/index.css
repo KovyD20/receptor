@@ -23,6 +23,21 @@
   --blue: #3fa0ff;
   --green: #6ee7a0;
 
+  --cat-vegetables: #6ee7a0;
+  --cat-fruits: #ffb020;
+  --cat-meat: #e5383b;
+  --cat-dairy: #7fc7ff;
+  --cat-bakery: #d9a05b;
+  --cat-dry: #c9b458;
+  --cat-spices: #ff7a45;
+  --cat-frozen: #67d5e0;
+  --cat-deli: #d98cb3;
+  --cat-drinks: #9b8cff;
+  --cat-snacks: #f0c96a;
+  --cat-household: #9aa0a6;
+  --cat-household-bath: #8fb2c4;
+  --cat-other: #8f8f8f;
+
   --text: #ffffff;
   --text-strong: #f2f2f2;
   --text-body: #eaeaea;
@@ -169,6 +184,9 @@ button {
 }
 .icon-btn:hover:not(:disabled) {
   background: #3a3a3a;
+}
+.icon-btn.is-favorite {
+  color: var(--yellow);
 }
 .icon-btn:disabled {
   opacity: 0.4;

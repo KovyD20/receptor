@@ -18,12 +18,13 @@ import { SYSTEM_UNITS } from "../constants/units";
 import { useRecipes } from "../hooks/useRecipes";
 import { useInventory } from "../hooks/useInventory";
 import { useIsMobile } from "../hooks/useIsMobile";
+import { useCategoryColors } from "../hooks/useCategoryColors";
 import { useCatalog } from "../context/CatalogContext";
 import { useToast } from "../context/ToastContext";
 import { useConfirm } from "../context/ConfirmContext";
 import {
+  filterRecipes,
   itemMatchesSearch,
-  recipeMatchesSearch,
   recipeServings,
   scaleIngredients,
   sortByAvailability,
@@ -94,6 +95,7 @@ export default function Home({ user }) {
     createRecipe,
     updateRecipe,
     deleteRecipe,
+    toggleFavorite,
     deleteTagGlobally,
   } = useRecipes(user.uid);
 
@@ -125,6 +127,12 @@ export default function Home({ user }) {
   const { showToast } = useToast();
   const confirm = useConfirm();
   const isMobile = useIsMobile();
+  const {
+    colorFor: categoryColorFor,
+    isCustom: isCustomCategoryColor,
+    setColor: setCategoryColor,
+    resetColor: resetCategoryColor,
+  } = useCategoryColors(user.uid);
 
   const [tab, setTab] = useState("receptek");
   const [selectedId, setSelectedId] = useState(null);
@@ -172,11 +180,7 @@ export default function Home({ user }) {
   const steps = selectedRecipe?.steps || [];
 
   const visibleRecipes = useMemo(() => {
-    const filtered = recipes.filter(
-      (r) =>
-        (filterTag === "all" || r.tags?.includes(filterTag)) &&
-        recipeMatchesSearch(r, search),
-    );
+    const filtered = filterRecipes(recipes, { filterTag, search });
     if (sortMode !== "availability") return filtered;
     return sortByAvailability(filtered, fridge, resolveCatalogKey);
   }, [recipes, filterTag, search, sortMode, fridge, resolveCatalogKey]);
@@ -214,6 +218,31 @@ export default function Home({ user }) {
       showToast(message, "success");
     } catch (err) {
       notifyError(err);
+    }
+  };
+
+  const handleCategoryColorChange = async (category, hex) => {
+    try {
+      await setCategoryColor(category, hex);
+    } catch (err) {
+      notifyError(err, "A szín mentése sikertelen");
+    }
+  };
+
+  const handleCategoryColorReset = async (category) => {
+    try {
+      await resetCategoryColor(category);
+    } catch (err) {
+      notifyError(err, "A szín visszaállítása sikertelen");
+    }
+  };
+
+  const handleToggleFavorite = async (recipe) => {
+    if (!recipe) return;
+    try {
+      await toggleFavorite(recipe);
+    } catch (err) {
+      notifyError(err, "Kedvenc jelölés sikertelen");
     }
   };
 
@@ -348,6 +377,7 @@ export default function Home({ user }) {
           onAddMissingToCart={(missing) =>
             handleAddIngredients(missing, "A hiányzók a bevásárlólistán")
           }
+          onToggleFavorite={() => handleToggleFavorite(selectedRecipe)}
           onEdit={() => setEditingRecipe(selectedRecipe)}
           onDelete={handleDeleteRecipe}
           onGoToRecipes={() => goToTab("receptek")}
@@ -364,6 +394,10 @@ export default function Home({ user }) {
           units={SYSTEM_UNITS}
           recommendations={missingRecommendations}
           isMobile={isMobile}
+          colorFor={categoryColorFor}
+          isCustomColor={isCustomCategoryColor}
+          onCategoryColorChange={handleCategoryColorChange}
+          onCategoryColorReset={handleCategoryColorReset}
           onToggleDone={(item) =>
             toggleShoppingItemDone(item).catch(notifyError)
           }
@@ -388,6 +422,10 @@ export default function Home({ user }) {
           itemCount={fridge.length}
           units={SYSTEM_UNITS}
           isMobile={isMobile}
+          colorFor={categoryColorFor}
+          isCustomColor={isCustomCategoryColor}
+          onCategoryColorChange={handleCategoryColorChange}
+          onCategoryColorReset={handleCategoryColorReset}
           onUpdateItem={(item, delta) =>
             addToFridge(item, delta).catch((err) =>
               notifyError(err, "Hiba a hűtő frissítésekor"),

@@ -93,6 +93,17 @@ export function sortByAvailability(recipes, fridge, keyOf) {
     .map((entry) => entry.recipe);
 }
 
+export const FAVORITES_FILTER = "favorites";
+
+export function filterRecipes(recipes, { filterTag = "all", search = "" } = {}) {
+  return (recipes || []).filter((recipe) => {
+    if (!recipeMatchesSearch(recipe, search)) return false;
+    if (filterTag === "all") return true;
+    if (filterTag === FAVORITES_FILTER) return recipe?.favorite === true;
+    return recipe?.tags?.includes(filterTag) === true;
+  });
+}
+
 export function recipeMatchesSearch(recipe, term) {
   const needle = normalizeCatalogText(term);
   if (!needle) return true;

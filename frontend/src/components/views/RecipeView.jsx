@@ -68,6 +68,7 @@ export default function RecipeView({
   onAddIngredient,
   onAddAllToCart,
   onAddMissingToCart,
+  onToggleFavorite,
   onEdit,
   onDelete,
   onGoToRecipes,
@@ -96,6 +97,17 @@ export default function RecipeView({
   const tools = (
     <>
       <Servings value={servings} onChange={onServingsChange} />
+      <button
+        type="button"
+        className={`icon-btn${recipe.favorite ? " is-favorite" : ""}`}
+        aria-label={
+          recipe.favorite ? "Kedvencek közül eltávolít" : "Kedvencekhez ad"
+        }
+        aria-pressed={Boolean(recipe.favorite)}
+        onClick={onToggleFavorite}
+      >
+        <Icon name="star" size={12} />
+      </button>
       <button
         type="button"
         className="icon-btn"
