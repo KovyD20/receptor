@@ -333,13 +333,18 @@ export default function Home({ user }) {
                 existingTags={allTags}
                 onAddTag={addTag}
                 onDeleteTag={deleteTagGlobally}
-                onSave={async ({ id, ...data }) => {
+                onSave={async ({ id, ...data }, imageOpts) => {
                   try {
-                    await updateRecipe(id, data);
+                    await updateRecipe(id, data, imageOpts);
                     setEditingRecipe(null);
                     showToast("Recept frissítve", "success");
                   } catch (err) {
-                    notifyError(err, "Recept mentése sikertelen");
+                    notifyError(
+                      err,
+                      err?.stage === "image"
+                        ? "A recept mentve, de a kép feltöltése nem sikerült"
+                        : "Recept mentése sikertelen",
+                    );
                   }
                 }}
               />
@@ -464,14 +469,23 @@ export default function Home({ user }) {
               existingTags={allTags}
               onAddTag={addTag}
               onDeleteTag={deleteTagGlobally}
-              onCreate={async (data) => {
+              onCreate={async (data, imageOpts) => {
                 try {
-                  await createRecipe(data);
+                  await createRecipe(data, imageOpts);
                   setShowManualForm(false);
                   showToast("Recept elmentve", "success");
                   goToTab("receptek");
                 } catch (err) {
-                  notifyError(err, "Recept mentése sikertelen");
+                  if (err?.stage === "image") {
+                    setShowManualForm(false);
+                    goToTab("receptek");
+                  }
+                  notifyError(
+                    err,
+                    err?.stage === "image"
+                      ? "A recept elmentve, de a kép feltöltése nem sikerült"
+                      : "Recept mentése sikertelen",
+                  );
                 }
               }}
             />
