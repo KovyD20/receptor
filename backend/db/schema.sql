@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS pantry_items (
                  CHECK (priority IN ('essential', 'good_to_have', 'extra'))
 );
 
+ALTER TABLE pantry_items ADD COLUMN IF NOT EXISTS image_url TEXT;
+
 CREATE TABLE IF NOT EXISTS pantry_aliases (
   id             SERIAL PRIMARY KEY,
   item_id        INT  NOT NULL REFERENCES pantry_items(id) ON DELETE CASCADE,

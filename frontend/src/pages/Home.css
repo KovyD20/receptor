@@ -747,6 +747,15 @@
   color: #1b1b1b;
 }
 
+.item-thumb {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: 6px;
+  object-fit: cover;
+  background: var(--pill);
+}
+
 .item-name {
   flex: 1;
   min-width: 0;

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Icon from "../Icon/Icon";
 import ColorPicker from "../ColorPicker/ColorPicker";
+import { pantryImageUrl } from "../../lib/pantryImages";
 
 export function CollapseAllToggle({ keys, anyClosed, onOpenAll, onCloseAll }) {
   if (!keys || keys.length === 0) return null;
@@ -87,6 +88,9 @@ export function GroupCard({
 
 export function ItemRow({
   name,
+  nameKey,
+  imageUrl,
+  showThumb = true,
   qtyLabel,
   done,
   onToggleDone,
@@ -95,6 +99,9 @@ export function ItemRow({
   onDelete,
   disableDecrement,
 }) {
+  const [thumbFailed, setThumbFailed] = useState(false);
+  const thumbSrc = showThumb ? pantryImageUrl({ nameKey, imageUrl }) : null;
+
   return (
     <div className="item-row">
       {onToggleDone && (
@@ -107,6 +114,18 @@ export function ItemRow({
         >
           <Icon name="check" size={11} />
         </button>
+      )}
+
+      {thumbSrc && !thumbFailed && (
+        <img
+          className="item-thumb"
+          src={thumbSrc}
+          alt=""
+          aria-hidden="true"
+          loading="lazy"
+          decoding="async"
+          onError={() => setThumbFailed(true)}
+        />
       )}
 
       <span className={`item-name${done ? " is-done" : ""}`}>{name}</span>
