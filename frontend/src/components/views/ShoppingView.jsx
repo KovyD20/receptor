@@ -1,12 +1,24 @@
 import { useState } from "react";
 import Icon from "../Icon/Icon";
-import { AddItemRow, GroupCard, ItemRow } from "./GroupedItems";
+import {
+  AddItemRow,
+  CollapseAllToggle,
+  GroupCard,
+  ItemRow,
+} from "./GroupedItems";
 import { useCollapsedGroups } from "../../hooks/useCollapsedGroups";
 
 const ACCENT = "var(--yellow)";
+const REC_KEY = "rec";
 
-function RecommendationsCard({ essential, goodToHave, extra, onAdd }) {
-  const { isOpen, toggle } = useCollapsedGroups();
+function RecommendationsCard({
+  essential,
+  goodToHave,
+  extra,
+  onAdd,
+  isOpen,
+  toggle,
+}) {
   const [showMore, setShowMore] = useState(false);
 
   return (
@@ -15,8 +27,8 @@ function RecommendationsCard({ essential, goodToHave, extra, onAdd }) {
         type="button"
         className="group-head"
         style={{ "--accent": "#4a4a4a" }}
-        aria-expanded={isOpen("rec")}
-        onClick={() => toggle("rec")}
+        aria-expanded={isOpen(REC_KEY)}
+        onClick={() => toggle(REC_KEY)}
       >
         <span className="group-name">Ajánlott alapok</span>
         <span className="group-meta">{essential.length} hiányzik</span>
@@ -27,7 +39,7 @@ function RecommendationsCard({ essential, goodToHave, extra, onAdd }) {
         />
       </button>
 
-      {isOpen("rec") && (
+      {isOpen(REC_KEY) && (
         <div className="rec-list">
           {essential.length === 0 ? (
             <p className="rec-empty">Minden alapvető tétel megvan.</p>
@@ -108,10 +120,20 @@ export default function ShoppingView({
   onClearDone,
   onMoveToFridge,
 }) {
-  const { isOpen, toggle } = useCollapsedGroups();
+  const { isOpen, toggle, openAll, closeAll, anyClosed } = useCollapsedGroups();
 
   const summary = `${openCount} tétel hátra · ${doneCount} kész`;
   const hasGroups = groups.length > 0;
+  const collapsibleKeys = [...groups.map((group) => group.category), REC_KEY];
+
+  const collapseToggle = (
+    <CollapseAllToggle
+      keys={collapsibleKeys}
+      anyClosed={anyClosed}
+      onOpenAll={openAll}
+      onCloseAll={closeAll}
+    />
+  );
 
   return (
     <div className="view" style={{ "--accent": ACCENT }}>
@@ -134,6 +156,7 @@ export default function ShoppingView({
           <span className="view-title">Bevásárlólista</span>
           <span className="view-pill">{summary}</span>
           <div className="view-spacer" />
+          {collapseToggle}
           <AddItemRow units={units} onAdd={onAddItem} />
           <button
             type="button"
@@ -157,16 +180,19 @@ export default function ShoppingView({
       )}
 
       {isMobile && (
-        <button
-          type="button"
-          className="btn-pill btn-outline"
-          style={{ "--accent": "var(--blue)", width: "100%" }}
-          disabled={!hasGroups}
-          onClick={onMoveToFridge}
-        >
-          <Icon name="swap" size={12} />
-          Hűtőbe rak
-        </button>
+        <div className="list-tools">
+          <button
+            type="button"
+            className="btn-pill btn-outline"
+            style={{ "--accent": "var(--blue)", flex: 1 }}
+            disabled={!hasGroups}
+            onClick={onMoveToFridge}
+          >
+            <Icon name="swap" size={12} />
+            Hűtőbe rak
+          </button>
+          {collapseToggle}
+        </div>
       )}
 
       <div className="view-scroll">
@@ -220,6 +246,8 @@ export default function ShoppingView({
             goodToHave={recommendations.goodToHave}
             extra={recommendations.extra}
             onAdd={(item) => onAddItem({ name: item.name, amount: 1, unit: "db" })}
+            isOpen={isOpen}
+            toggle={toggle}
           />
         </div>
       </div>

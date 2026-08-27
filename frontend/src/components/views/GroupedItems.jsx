@@ -2,6 +2,23 @@ import { useState } from "react";
 import Icon from "../Icon/Icon";
 import ColorPicker from "../ColorPicker/ColorPicker";
 
+export function CollapseAllToggle({ keys, anyClosed, onOpenAll, onCloseAll }) {
+  if (!keys || keys.length === 0) return null;
+
+  const willExpand = anyClosed(keys);
+
+  return (
+    <button
+      type="button"
+      className="btn-pill btn-outline btn-outline-neutral collapse-all"
+      onClick={() => (willExpand ? onOpenAll() : onCloseAll(keys))}
+    >
+      <Icon name={willExpand ? "chevronDown" : "chevronUp"} size={11} />
+      {willExpand ? "Kategóriák kibontása" : "Kategóriák összecsukása"}
+    </button>
+  );
+}
+
 export function GroupCard({
   accent,
   category,
