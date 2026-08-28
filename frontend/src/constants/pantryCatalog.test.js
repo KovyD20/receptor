@@ -12,6 +12,7 @@ const catalogData = {
           canonicalName: "vöröshagyma",
           normalizedKey: "voroshagyma",
           priority: "essential",
+          purchase: { unit: "kg", amount: 1 },
           aliases: ["voros hagyma", "piros hagyma"],
         },
         {
@@ -19,6 +20,7 @@ const catalogData = {
           canonicalName: "burgonya",
           normalizedKey: "burgonya",
           priority: "good_to_have",
+          purchase: { unit: "kg" },
           aliases: ["krumpli"],
         },
       ],
@@ -85,5 +87,35 @@ describe("createCatalog", () => {
     expect(essential.map((i) => i.name)).toEqual(["vöröshagyma"]);
     expect(goodToHave.map((i) => i.name)).toEqual(["burgonya"]);
     expect(extra).toEqual([]);
+  });
+});
+
+describe("createCatalog package data", () => {
+  const catalog = createCatalog(catalogData);
+
+  it("exposes a usable package size on the catalog entry", () => {
+    expect(catalog.getCatalogItemByName("voros hagyma").purchase).toEqual({
+      unit: "kg",
+      amount: 1,
+    });
+  });
+
+  it("drops half-filled package data, and reports none as null", () => {
+    expect(catalog.getCatalogItemByName("krumpli").purchase).toBeNull();
+    expect(catalog.getCatalogItemByName("tej").purchase).toBeNull();
+  });
+
+  it("carries the package size onto grouped items", () => {
+    const groups = catalog.groupItemsByCatalog([
+      { id: "1", name: "krumpli", amount: 2, unit: "kg" },
+      { id: "2", name: "vöröshagyma", amount: 1, unit: "kg" },
+    ]);
+    const items = groups.flatMap((group) => group.items);
+
+    expect(items.find((i) => i.id === "2").purchase).toEqual({
+      unit: "kg",
+      amount: 1,
+    });
+    expect(items.find((i) => i.id === "1").purchase).toBeNull();
   });
 });

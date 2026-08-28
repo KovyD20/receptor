@@ -15,6 +15,14 @@ export function normalizeCatalogText(value) {
 }
 
 
+function normalizePurchase(purchase) {
+  const unit = (purchase?.unit || "").toString().trim();
+  const amount = Number(purchase?.amount);
+  if (!unit || !Number.isFinite(amount) || amount <= 0) return null;
+  return { unit, amount };
+}
+
+
 export function createCatalog(catalogData) {
   const categories = Array.isArray(catalogData?.categories)
     ? catalogData.categories
@@ -37,6 +45,7 @@ export function createCatalog(catalogData) {
           category: category.name,
           priority: item.priority || null,
           imageUrl: item.imageUrl || null,
+          purchase: normalizePurchase(item.purchase),
         };
         catalogByKey.set(entry.key, entry);
         for (const aliasKey of item.aliases || []) {
@@ -89,6 +98,7 @@ export function createCatalog(catalogData) {
         category,
         priority: meta?.priority || null,
         imageUrl: meta?.imageUrl || null,
+        purchase: meta?.purchase || null,
       };
 
       const list = grouped.get(category) || [];

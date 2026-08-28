@@ -23,3 +23,6 @@ CREATE TABLE IF NOT EXISTS pantry_aliases (
 
 CREATE INDEX IF NOT EXISTS idx_pantry_items_category ON pantry_items(category_id);
 CREATE INDEX IF NOT EXISTS idx_pantry_aliases_item   ON pantry_aliases(item_id);
+
+ALTER TABLE pantry_items ADD COLUMN IF NOT EXISTS purchase_unit   TEXT;
+ALTER TABLE pantry_items ADD COLUMN IF NOT EXISTS purchase_amount NUMERIC;

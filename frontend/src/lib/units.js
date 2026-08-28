@@ -58,3 +58,43 @@ export function convertAmount(amount, fromInfo, toInfo) {
   if (!areUnitsCompatible(fromInfo, toInfo)) return amount;
   return (Number(amount) || 0) * (fromInfo.factor / toInfo.factor);
 }
+
+const MAX_PURCHASE_PACKAGES = 20;
+const PACKAGE_EPSILON = 1e-9;
+
+export function toPurchaseAmount(amount, unit, purchase) {
+  const original = { amount, unit, rounded: false };
+
+  const packageAmount = Number(purchase?.amount);
+  const packageUnit = normalizeUnit(purchase?.unit);
+  if (!packageUnit || !Number.isFinite(packageAmount) || packageAmount <= 0) {
+    return original;
+  }
+
+  const numericAmount = Number(amount);
+  if (!Number.isFinite(numericAmount) || numericAmount <= 0) return original;
+
+  const from = unitInfo(unit);
+  const to = unitInfo(packageUnit);
+
+  if (!areUnitsCompatible(from, to)) {
+    return { amount: packageAmount, unit: packageUnit, rounded: true };
+  }
+
+  const converted = convertAmount(numericAmount, from, to);
+  const packages = Math.ceil(converted / packageAmount - PACKAGE_EPSILON);
+
+  if (packages > MAX_PURCHASE_PACKAGES) {
+    console.warn(
+      `toPurchaseAmount: ${numericAmount} ${from.unit} is ${packages} x ${packageAmount} ${packageUnit} — leaving the amount unchanged.`,
+    );
+    return original;
+  }
+
+  const rounded = Math.round(packages * packageAmount * 1000) / 1000;
+  return {
+    amount: rounded,
+    unit: packageUnit,
+    rounded: rounded !== numericAmount || packageUnit !== from.unit,
+  };
+}

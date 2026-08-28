@@ -92,6 +92,7 @@ export function ItemRow({
   imageUrl,
   showThumb = true,
   qtyLabel,
+  note,
   done,
   onToggleDone,
   onIncrement,
@@ -128,7 +129,10 @@ export function ItemRow({
         />
       )}
 
-      <span className={`item-name${done ? " is-done" : ""}`}>{name}</span>
+      <div className="item-label">
+        <span className={`item-name${done ? " is-done" : ""}`}>{name}</span>
+        {note && <span className="item-note">{note}</span>}
+      </div>
 
       <div className="item-stepper">
         <button

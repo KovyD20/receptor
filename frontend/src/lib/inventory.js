@@ -1,4 +1,10 @@
-import { collection, addDoc, doc, updateDoc } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  doc,
+  updateDoc,
+  deleteField,
+} from "firebase/firestore";
 import { unitInfo, areUnitsCompatible, convertAmount } from "./units";
 
 export async function upsertInventoryItem({
@@ -11,6 +17,7 @@ export async function upsertInventoryItem({
   mergeAmount,
   createAmount = mergeAmount,
   nameKeyOf,
+  purchaseSource,
 }) {
   const nameKey = nameKeyOf(canonicalName);
   const incomingUnitInfo = unitInfo(unit);
@@ -31,6 +38,9 @@ export async function upsertInventoryItem({
     await updateDoc(doc(db, "users", uid, collectionName, existing.id), {
       amount: nextAmount,
       name: canonicalName,
+      ...(purchaseSource === undefined
+        ? {}
+        : { sourceAmount: deleteField(), sourceUnit: deleteField() }),
     });
     return { status: "merged", id: existing.id };
   }
@@ -40,6 +50,9 @@ export async function upsertInventoryItem({
     name: canonicalName,
     amount: createAmount,
     unit,
+    ...(purchaseSource
+      ? { sourceAmount: purchaseSource.amount, sourceUnit: purchaseSource.unit }
+      : {}),
   });
   return { status: "created", id: ref.id };
 }

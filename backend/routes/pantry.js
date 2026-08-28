@@ -3,6 +3,13 @@ const pool = require("../db/pool");
 
 const router = express.Router();
 
+function purchaseOf(row) {
+  const unit = (row.purchase_unit || "").toString().trim();
+  const amount = Number(row.purchase_amount);
+  if (!unit || !Number.isFinite(amount) || amount <= 0) return null;
+  return { unit, amount };
+}
+
 router.get("/catalog", async (req, res) => {
   try {
     const [categories, items, aliases] = await Promise.all([
@@ -10,7 +17,7 @@ router.get("/catalog", async (req, res) => {
         "SELECT id, name, sort_order FROM pantry_categories ORDER BY sort_order, id",
       ),
       pool.query(
-        "SELECT id, category_id, canonical_name, normalized_key, priority, image_url FROM pantry_items ORDER BY canonical_name",
+        "SELECT id, category_id, canonical_name, normalized_key, priority, image_url, purchase_unit, purchase_amount FROM pantry_items ORDER BY canonical_name",
       ),
       pool.query(
         "SELECT item_id, normalized_key FROM pantry_aliases ORDER BY id",
@@ -27,12 +34,14 @@ router.get("/catalog", async (req, res) => {
     const itemsByCategory = new Map();
     for (const row of items.rows) {
       const list = itemsByCategory.get(row.category_id) || [];
+      const purchase = purchaseOf(row);
       list.push({
         id: row.id,
         canonicalName: row.canonical_name,
         normalizedKey: row.normalized_key,
         priority: row.priority,
         imageUrl: row.image_url,
+        ...(purchase ? { purchase } : {}),
         aliases: aliasesByItem.get(row.id) || [],
       });
       itemsByCategory.set(row.category_id, list);

@@ -10,11 +10,16 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { useCatalog } from "../context/CatalogContext";
-import { normalizeUnit, stripAmountsAndUnits } from "../lib/units";
+import {
+  normalizeUnit,
+  stripAmountsAndUnits,
+  toPurchaseAmount,
+} from "../lib/units";
 import { upsertInventoryItem } from "../lib/inventory";
 
 export function useInventory(uid) {
   const {
+    getCatalogItemByName,
     getMissingCatalogRecommendations,
     groupItemsByCatalog,
     resolveCanonicalCatalogName,
@@ -95,15 +100,20 @@ export function useInventory(uid) {
       const amount = Number(ing?.amount || 0);
       if (!amount || amount <= 0) continue;
 
+      const unit = normalizeUnit(ing?.unit);
+      const purchase = getCatalogItemByName(rawName)?.purchase;
+      const buy = toPurchaseAmount(amount, unit, purchase);
+
       await upsertInventoryItem({
         db,
         uid,
         collectionName: "shoppingList",
         list: shoppingList,
         canonicalName: canonicalizeName(rawName),
-        unit: normalizeUnit(ing?.unit),
-        mergeAmount: amount,
+        unit: buy.unit,
+        mergeAmount: buy.amount,
         nameKeyOf: normalizeName,
+        purchaseSource: buy.rounded ? { amount, unit } : null,
       });
     }
   };
