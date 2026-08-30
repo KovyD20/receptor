@@ -2,8 +2,12 @@ import { vi } from "vitest";
 
 export const listeners = [];
 
+export const batches = [];
+
 export function resetListeners() {
   listeners.length = 0;
+  batches.length = 0;
+  firestoreMock.writeBatch.mockClear();
   firestoreMock.addDoc.mockClear();
   firestoreMock.updateDoc.mockClear();
   firestoreMock.deleteDoc.mockClear();
@@ -27,7 +31,18 @@ export const firestoreMock = {
   deleteDoc: vi.fn(),
   setDoc: vi.fn(),
   deleteField: () => DELETE_FIELD,
-  writeBatch: vi.fn(() => ({ update: vi.fn(), commit: vi.fn() })),
+  writeBatch: vi.fn(() => {
+    const ops = [];
+    const batch = {
+      ops,
+      update: (ref, data) => ops.push({ type: "update", path: ref.path, data }),
+      set: (ref, data) => ops.push({ type: "set", path: ref.path, data }),
+      delete: (ref) => ops.push({ type: "delete", path: ref.path }),
+      commit: vi.fn(() => Promise.resolve()),
+    };
+    batches.push(batch);
+    return batch;
+  }),
 };
 
 export const DELETE_FIELD = { __op: "deleteField" };

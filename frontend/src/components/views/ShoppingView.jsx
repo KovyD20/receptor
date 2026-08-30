@@ -118,12 +118,27 @@ export default function ShoppingView({
   onDeleteItem,
   onAddItem,
   onClearDone,
+  onClearAll,
   onMoveToFridge,
 }) {
   const { isOpen, toggle, openAll, closeAll, anyClosed } = useCollapsedGroups();
 
   const summary = `${openCount} tétel hátra · ${doneCount} kész`;
   const hasGroups = groups.length > 0;
+  const hasItems = openCount + doneCount > 0;
+
+  const clearAllButton = (
+    <button
+      type="button"
+      className="btn-pill btn-outline"
+      style={{ "--accent": "var(--brand-bright)" }}
+      disabled={!hasItems}
+      onClick={onClearAll}
+    >
+      <Icon name="trash" size={12} />
+      Lista ürítése
+    </button>
+  );
   const collapsibleKeys = [...groups.map((group) => group.category), REC_KEY];
 
   const collapseToggle = (
@@ -176,6 +191,7 @@ export default function ShoppingView({
           >
             Kész tételek törlése
           </button>
+          {clearAllButton}
         </div>
       )}
 
@@ -191,6 +207,7 @@ export default function ShoppingView({
             <Icon name="swap" size={12} />
             Hűtőbe rak
           </button>
+          {clearAllButton}
           {collapseToggle}
         </div>
       )}

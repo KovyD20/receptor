@@ -7,6 +7,7 @@ import {
   onSnapshot,
   query,
   orderBy,
+  writeBatch,
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { useCatalog } from "../context/CatalogContext";
@@ -16,6 +17,8 @@ import {
   toPurchaseAmount,
 } from "../lib/units";
 import { upsertInventoryItem } from "../lib/inventory";
+
+const BATCH_LIMIT = 500;
 
 export function useInventory(uid) {
   const {
@@ -153,12 +156,20 @@ export function useInventory(uid) {
   const deleteShoppingItem = (item) =>
     deleteDoc(doc(db, "users", uid, "shoppingList", item.id));
 
+  const deleteShoppingItems = async (items) => {
+    for (let start = 0; start < items.length; start += BATCH_LIMIT) {
+      const batch = writeBatch(db);
+      for (const item of items.slice(start, start + BATCH_LIMIT)) {
+        batch.delete(doc(db, "users", uid, "shoppingList", item.id));
+      }
+      await batch.commit();
+    }
+  };
+
   const clearDoneShoppingItems = () =>
-    Promise.all(
-      shoppingList
-        .filter((item) => item.done)
-        .map((item) => deleteDoc(doc(db, "users", uid, "shoppingList", item.id))),
-    );
+    deleteShoppingItems(shoppingList.filter((item) => item.done));
+
+  const clearShoppingList = () => deleteShoppingItems(shoppingList);
 
   const moveShoppingToFridge = async () => {
     if (shoppingList.length === 0) return;
@@ -220,6 +231,7 @@ export function useInventory(uid) {
     toggleShoppingItemDone,
     deleteShoppingItem,
     clearDoneShoppingItems,
+    clearShoppingList,
     moveShoppingToFridge,
     addToFridge,
     deleteFridgeItem,
