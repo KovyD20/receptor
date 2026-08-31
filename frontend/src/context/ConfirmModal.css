@@ -33,6 +33,18 @@
   gap: 10px;
 }
 
+.confirm-actions .btn-pill:focus {
+  outline: 2px solid var(--text-strong);
+  outline-offset: 2px;
+}
+
+.confirm-accept.is-danger {
+  background: var(--brand-bright);
+}
+.confirm-accept.is-danger:hover:not(:disabled) {
+  background: #ff5457;
+}
+
 @keyframes confirm-fade {
   from {
     opacity: 0;
