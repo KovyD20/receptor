@@ -1,4 +1,5 @@
 import { normalizeCatalogText } from "../constants/pantryCatalog";
+import { MAIN_TAG_NAMES, mainTagOf } from "../constants/recipeTags";
 
 const asNumber = (value) => {
   const parsed = Number(value);
@@ -93,6 +94,21 @@ export function sortByAvailability(recipes, fridge, keyOf) {
     .map((entry) => entry.recipe);
 }
 
+export function sortByCourse(recipes) {
+  const rank = (recipe) => {
+    const course = mainTagOf(recipe);
+    if (!course) return MAIN_TAG_NAMES.length;
+    const index = MAIN_TAG_NAMES.indexOf(course);
+    return index === -1 ? MAIN_TAG_NAMES.length : index;
+  };
+
+  return [...(recipes || [])].sort((a, b) => {
+    const diff = rank(a) - rank(b);
+    if (diff !== 0) return diff;
+    return (a?.name || "").localeCompare(b?.name || "", "hu-HU");
+  });
+}
+
 export const FAVORITES_FILTER = "favorites";
 
 export function filterRecipes(recipes, { filterTag = "all", search = "" } = {}) {
@@ -124,4 +140,25 @@ export function itemMatchesSearch(item, term) {
   const needle = normalizeCatalogText(term);
   if (!needle) return true;
   return normalizeCatalogText(item?.displayName || item?.name).includes(needle);
+}
+
+export function groupIngredients(ingredients) {
+  const blocks = [];
+
+  for (const ingredient of ingredients || []) {
+    const group = ingredient?.group?.trim() || null;
+    const last = blocks[blocks.length - 1];
+    if (last && last.group === group) last.items.push(ingredient);
+    else blocks.push({ group, items: [ingredient] });
+  }
+
+  return blocks;
+}
+
+export function cleanIngredient({ group, note, ...ingredient }) {
+  return {
+    ...ingredient,
+    ...(group?.trim() ? { group: group.trim() } : {}),
+    ...(note?.trim() ? { note: note.trim() } : {}),
+  };
 }

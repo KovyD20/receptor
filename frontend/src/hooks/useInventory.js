@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   collection,
   deleteDoc,
+  deleteField,
   doc,
   updateDoc,
   onSnapshot,
@@ -12,9 +13,12 @@ import {
 import { db } from "../firebase";
 import { useCatalog } from "../context/CatalogContext";
 import {
+  areUnitsCompatible,
+  convertAmount,
   normalizeUnit,
   stripAmountsAndUnits,
   toPurchaseAmount,
+  unitInfo,
 } from "../lib/units";
 import { upsertInventoryItem } from "../lib/inventory";
 
@@ -148,6 +152,43 @@ export function useInventory(uid) {
     });
   };
 
+  const setInventoryItemAmount =
+    (collectionName) =>
+    async (item, { amount, unit } = {}) => {
+      if (!uid || !item?.id) return;
+
+      let nextAmount = amount === undefined ? Number(item.amount || 0) : Number(amount);
+      let nextUnit = item.unit;
+
+      if (unit !== undefined) {
+        const normalized = normalizeUnit(unit);
+        if (!normalized) return;
+        if (normalized !== item.unit) {
+          const from = unitInfo(item.unit);
+          const to = unitInfo(normalized);
+          if (areUnitsCompatible(from, to)) {
+            nextAmount =
+              Math.round(convertAmount(nextAmount, from, to) * 100) / 100;
+          }
+        }
+        nextUnit = normalized;
+      }
+
+      if (!Number.isFinite(nextAmount) || nextAmount <= 0) return;
+      if (nextAmount === Number(item.amount || 0) && nextUnit === item.unit) return;
+
+      await updateDoc(doc(db, "users", uid, collectionName, item.id), {
+        amount: nextAmount,
+        unit: nextUnit,
+        ...(item.sourceAmount === undefined
+          ? {}
+          : { sourceAmount: deleteField(), sourceUnit: deleteField() }),
+      });
+    };
+
+  const setShoppingItemAmount = setInventoryItemAmount("shoppingList");
+  const setFridgeItemAmount = setInventoryItemAmount("fridge");
+
   const toggleShoppingItemDone = (item) =>
     updateDoc(doc(db, "users", uid, "shoppingList", item.id), {
       done: !item.done,
@@ -228,6 +269,8 @@ export function useInventory(uid) {
     addToShoppingList,
     addSingleShoppingItem,
     updateShoppingItem,
+    setShoppingItemAmount,
+    setFridgeItemAmount,
     toggleShoppingItemDone,
     deleteShoppingItem,
     clearDoneShoppingItems,

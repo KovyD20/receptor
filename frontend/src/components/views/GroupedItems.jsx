@@ -86,12 +86,52 @@ export function GroupCard({
   );
 }
 
+function AmountField({ value, onCommit, onDone }) {
+  const [draft, setDraft] = useState(null);
+
+  const commit = () => {
+    if (draft === null) return;
+    const next = Number(draft);
+    setDraft(null);
+    if (!Number.isFinite(next) || next <= 0 || next === Number(value)) return;
+    onCommit(next);
+  };
+
+  return (
+    <input
+      className="item-qty-input"
+      type="number"
+      min="0"
+      step="any"
+      aria-label="Mennyiség"
+      autoFocus
+      value={draft ?? String(value ?? "")}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          commit();
+          onDone?.();
+        } else if (e.key === "Escape") {
+          setDraft(null);
+          onDone?.();
+        }
+      }}
+    />
+  );
+}
+
 export function ItemRow({
   name,
   nameKey,
   imageUrl,
   showThumb = true,
   qtyLabel,
+  amount,
+  unit,
+  units,
+  onAmountChange,
+  onUnitChange,
   note,
   done,
   onToggleDone,
@@ -101,7 +141,11 @@ export function ItemRow({
   disableDecrement,
 }) {
   const [thumbFailed, setThumbFailed] = useState(false);
+  const [editing, setEditing] = useState(false);
   const thumbSrc = showThumb ? pantryImageUrl({ nameKey, imageUrl }) : null;
+
+  const canEdit = Boolean(onAmountChange || onUnitChange);
+  const isEditing = canEdit && editing;
 
   return (
     <div className="item-row">
@@ -144,7 +188,32 @@ export function ItemRow({
         >
           <Icon name="minus" size={11} />
         </button>
-        <span className="item-qty">{qtyLabel}</span>
+        {isEditing && onAmountChange ? (
+          <AmountField
+            value={amount}
+            onCommit={onAmountChange}
+            onDone={() => setEditing(false)}
+          />
+        ) : (
+          <span className="item-qty">{qtyLabel}</span>
+        )}
+        {isEditing && onUnitChange && (
+          <select
+            className="item-unit"
+            aria-label="Mértékegység"
+            value={unit}
+            onChange={(e) => onUnitChange(e.target.value)}
+          >
+            {(units || []).includes(unit) ? null : (
+              <option value={unit}>{unit}</option>
+            )}
+            {(units || []).map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        )}
         <button
           type="button"
           className="icon-btn"
@@ -154,6 +223,18 @@ export function ItemRow({
           <Icon name="plus" size={11} />
         </button>
       </div>
+
+      {canEdit && (
+        <button
+          type="button"
+          className={`icon-btn item-edit${isEditing ? " is-active" : ""}`}
+          aria-label={`${name} mennyiségének módosítása`}
+          aria-pressed={isEditing}
+          onClick={() => setEditing((prev) => !prev)}
+        >
+          <Icon name={isEditing ? "check" : "pen"} size={11} />
+        </button>
+      )}
 
       <button
         type="button"

@@ -115,6 +115,7 @@ export default function ShoppingView({
   onCategoryColorReset,
   onToggleDone,
   onUpdateItem,
+  onSetItemAmount,
   onDeleteItem,
   onAddItem,
   onClearDone,
@@ -249,6 +250,17 @@ export default function ShoppingView({
                   imageUrl={item.imageUrl}
                   showThumb={!isMobile}
                     qtyLabel={`${item.amount} ${item.unit}`}
+                    amount={item.amount}
+                    unit={item.unit}
+                    units={units}
+                    onAmountChange={
+                      onSetItemAmount &&
+                      ((amount) => onSetItemAmount(item, { amount }))
+                    }
+                    onUnitChange={
+                      onSetItemAmount &&
+                      ((unit) => onSetItemAmount(item, { unit }))
+                    }
                     note={
                       item.sourceAmount
                         ? `recept: ${item.sourceAmount} ${item.sourceUnit || ""}`.trim()

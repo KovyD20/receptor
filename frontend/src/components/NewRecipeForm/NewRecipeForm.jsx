@@ -13,12 +13,20 @@ import {
   IMAGE_ERROR,
   validateImageFile,
 } from "../../lib/imageUpload";
+import {
+  emptyIngredient,
+  flattenBlocks,
+  moveIngredient,
+  newBlock,
+  toBlocks,
+  ungroupBlock,
+} from "../../lib/ingredientBlocks";
 import { useToast } from "../../context/ToastContext";
 import { useConfirm } from "../../context/ConfirmContext";
 
 const UNITS = SYSTEM_UNITS;
 
-const emptyIngredient = () => ({ name: "", amount: "", unit: "g" });
+
 
 const IMAGE_ERROR_TEXT = {
   [IMAGE_ERROR.TYPE]: "Csak képfájlt lehet feltölteni",
@@ -118,9 +126,7 @@ export default function NewRecipeForm({
   recipe,
 }) {
   const [name, setName] = useState(recipe?.name || "");
-  const [ingredients, setIngredients] = useState(
-    recipe?.ingredients?.length ? recipe.ingredients : [emptyIngredient()],
-  );
+  const [blocks, setBlocks] = useState(() => toBlocks(recipe?.ingredients));
   const [steps, setSteps] = useState(recipe?.steps?.length ? recipe.steps : [""]);
   const [selectedTags, setSelectedTags] = useState(recipe?.tags || []);
   const [newTag, setNewTag] = useState("");
@@ -149,12 +155,29 @@ export default function NewRecipeForm({
   const { showToast } = useToast();
   const confirm = useConfirm();
 
-  const patchIngredient = (index, field, value) =>
-    setIngredients((prev) =>
-      prev.map((ing, i) => (i === index ? { ...ing, [field]: value } : ing)),
+  const patchIngredient = (blockId, index, field, value) =>
+    setBlocks((prev) =>
+      prev.map((block) =>
+        block.id === blockId
+          ? {
+              ...block,
+              items: block.items.map((item, i) =>
+                i === index ? { ...item, [field]: value } : item,
+              ),
+            }
+          : block,
+      ),
     );
 
-  const ingredientNameRefs = useRef([]);
+  const patchGroup = (blockId, value) =>
+    setBlocks((prev) =>
+      prev.map((block) =>
+        block.id === blockId ? { ...block, group: value } : block,
+      ),
+    );
+
+  const ingredientNameRefs = useRef({});
+  const groupInputRefs = useRef({});
   const stepRefs = useRef([]);
   const pendingFocusRef = useRef(null);
 
@@ -162,23 +185,90 @@ export default function NewRecipeForm({
     const pending = pendingFocusRef.current;
     if (!pending) return;
     pendingFocusRef.current = null;
-    const refs = pending.list === "ingredients" ? ingredientNameRefs : stepRefs;
-    refs.current[pending.index]?.focus();
+    const refs =
+      pending.list === "ingredients"
+        ? ingredientNameRefs
+        : pending.list === "group"
+          ? groupInputRefs
+          : stepRefs;
+    refs.current[pending.key]?.focus();
   });
 
-  const addIngredient = () => {
-    pendingFocusRef.current = { list: "ingredients", index: ingredients.length };
-    setIngredients((prev) => [...prev, emptyIngredient()]);
+  const addIngredient = (blockId) => {
+    const block = blocks.find((b) => b.id === blockId);
+    if (!block) return;
+    pendingFocusRef.current = {
+      list: "ingredients",
+      key: `${blockId}:${block.items.length}`,
+    };
+    setBlocks((prev) =>
+      prev.map((b) =>
+        b.id === blockId ? { ...b, items: [...b.items, emptyIngredient()] } : b,
+      ),
+    );
   };
 
-  const addOnEnterFromLast = (index, count) => (event) => {
-    if (event.key !== "Enter" || index !== count - 1) return;
+  const addGroup = () => {
+    const block = newBlock("");
+    pendingFocusRef.current = { list: "group", key: block.id };
+    setBlocks((prev) => [...prev, block]);
+  };
+
+  const removeIngredient = (blockId, index) =>
+    setBlocks((prev) =>
+      prev.map((block) =>
+        block.id === blockId
+          ? { ...block, items: block.items.filter((_, i) => i !== index) }
+          : block,
+      ),
+    );
+
+  const removeGroup = (blockId) =>
+    setBlocks((prev) => ungroupBlock(prev, blockId));
+
+  const dragRef = useRef(null);
+  const [dragging, setDragging] = useState(false);
+  const [dropTarget, setDropTarget] = useState(null);
+
+  const rowKey = (blockId, index) => `${blockId}:${index}`;
+
+  const startDrag = (blockId, index) => (event) => {
+    dragRef.current = { blockId, index };
+    setDragging(true);
+    event.dataTransfer?.setData("text/plain", "");
+    if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+  };
+
+  const endDrag = () => {
+    dragRef.current = null;
+    setDragging(false);
+    setDropTarget(null);
+  };
+
+  const allowDrop = (key) => (event) => {
+    if (!dragRef.current) return;
     event.preventDefault();
-    addIngredient();
+    event.stopPropagation();
+    setDropTarget(key);
+  };
+
+  const dropOn = (blockId, index) => (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const from = dragRef.current;
+    endDrag();
+    if (!from) return;
+    setBlocks((prev) => moveIngredient(prev, from, { blockId, index }));
+  };
+
+  const addOnEnterFromLast = (block, index) => (event) => {
+    if (event.key !== "Enter" || index !== block.items.length - 1) return;
+    event.preventDefault();
+    addIngredient(block.id);
   };
 
   const addStep = () => {
-    pendingFocusRef.current = { list: "steps", index: steps.length };
+    pendingFocusRef.current = { list: "steps", key: steps.length };
     setSteps((prev) => [...prev, ""]);
   };
 
@@ -188,6 +278,7 @@ export default function NewRecipeForm({
       return;
     }
 
+    const ingredients = flattenBlocks(blocks);
     if (
       ingredients.length === 0 ||
       ingredients.some((i) => !i.name.trim() || Number(i.amount) <= 0)
@@ -230,7 +321,7 @@ export default function NewRecipeForm({
       await onCreate?.(data, { imageFile });
 
       setName("");
-      setIngredients([emptyIngredient()]);
+      setBlocks(toBlocks(null));
       setSteps([""]);
       setSelectedTags([]);
       setNewTag("");
@@ -295,64 +386,145 @@ export default function NewRecipeForm({
           <button
             type="button"
             className="rform-add"
-            onClick={addIngredient}
+            onClick={() => addIngredient(blocks[blocks.length - 1]?.id)}
           >
             <Icon name="plus" size={11} />
             Hozzávaló
           </button>
         </div>
 
-        {ingredients.map((ing, i) => (
-          <div key={i} className="rform-ing">
-            <input
-              ref={(el) => (ingredientNameRefs.current[i] = el)}
-              className="field field-neutral rform-ing-name"
-              placeholder="Név"
-              value={ing.name}
-              onChange={(e) => patchIngredient(i, "name", e.target.value)}
-              onKeyDown={addOnEnterFromLast(i, ingredients.length)}
-            />
-            <input
-              className="field field-neutral rform-ing-amount"
-              type="number"
-              min="0"
-              placeholder="Menny."
-              value={ing.amount}
-              onChange={(e) => patchIngredient(i, "amount", e.target.value)}
-              onKeyDown={addOnEnterFromLast(i, ingredients.length)}
-            />
-            <select
-              className="field field-neutral rform-ing-unit"
-              aria-label="Mértékegység"
-              value={ing.unit}
-              onChange={(e) => patchIngredient(i, "unit", e.target.value)}
-            >
-              {UNITS.map((unit) => (
-                <option key={unit} value={unit}>
-                  {unit}
-                </option>
-              ))}
-            </select>
+        {blocks.map((block) => (
+          <div
+            key={block.id}
+            className={`rform-group${block.group === null ? "" : " is-named"}`}
+          >
+            {block.group !== null && (
+              <div className="rform-group-head">
+                <input
+                  ref={(el) => (groupInputRefs.current[block.id] = el)}
+                  className="field field-neutral rform-group-name"
+                  placeholder="Csoport neve (pl. A töltelékhez)"
+                  aria-label="Csoport neve"
+                  value={block.group}
+                  onChange={(e) => patchGroup(block.id, e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="icon-btn rform-remove"
+                  aria-label="Csoport feloldása"
+                  onClick={() => removeGroup(block.id)}
+                >
+                  <Icon name="xmark" size={11} />
+                </button>
+              </div>
+            )}
+
+            {block.items.map((ing, i) => {
+              const key = rowKey(block.id, i);
+              return (
+                <div
+                  key={ing.id}
+                  className={`rform-ing${dropTarget === key ? " is-drop-target" : ""}`}
+                  onDragOver={allowDrop(key)}
+                  onDrop={dropOn(block.id, i)}
+                >
+                  <button
+                    type="button"
+                    draggable
+                    className="rform-drag"
+                    aria-label={`${ing.name || "Hozzávaló"} áthelyezése`}
+                    onDragStart={startDrag(block.id, i)}
+                    onDragEnd={endDrag}
+                  >
+                    <Icon name="swap" size={11} />
+                  </button>
+                  <input
+                    ref={(el) => (ingredientNameRefs.current[key] = el)}
+                    className="field field-neutral rform-ing-name"
+                    placeholder="Név"
+                    value={ing.name}
+                    onChange={(e) =>
+                      patchIngredient(block.id, i, "name", e.target.value)
+                    }
+                    onKeyDown={addOnEnterFromLast(block, i)}
+                  />
+                  <input
+                    className="field field-neutral rform-ing-amount"
+                    type="number"
+                    min="0"
+                    placeholder="Menny."
+                    value={ing.amount}
+                    onChange={(e) =>
+                      patchIngredient(block.id, i, "amount", e.target.value)
+                    }
+                    onKeyDown={addOnEnterFromLast(block, i)}
+                  />
+                  <select
+                    className="field field-neutral rform-ing-unit"
+                    aria-label="Mértékegység"
+                    value={ing.unit}
+                    onChange={(e) =>
+                      patchIngredient(block.id, i, "unit", e.target.value)
+                    }
+                  >
+                    {UNITS.map((unit) => (
+                      <option key={unit} value={unit}>
+                        {unit}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    className="field field-neutral rform-ing-note"
+                    placeholder="Megjegyzés"
+                    aria-label="Megjegyzés"
+                    value={ing.note || ""}
+                    onChange={(e) =>
+                      patchIngredient(block.id, i, "note", e.target.value)
+                    }
+                    onKeyDown={addOnEnterFromLast(block, i)}
+                  />
+                  <button
+                    type="button"
+                    className="icon-btn danger rform-remove"
+                    aria-label="Hozzávaló törlése"
+                    onClick={() => removeIngredient(block.id, i)}
+                  >
+                    <Icon name="trash" size={12} />
+                  </button>
+                </div>
+              );
+            })}
+
+            {(dragging || block.items.length === 0) && (
+              <div
+                className={`rform-drop-end${
+                  dropTarget === rowKey(block.id, "end") ? " is-drop-target" : ""
+                }`}
+                onDragOver={allowDrop(rowKey(block.id, "end"))}
+                onDrop={dropOn(block.id, null)}
+              >
+                Ide húzva a csoport végére kerül
+              </div>
+            )}
+
             <button
               type="button"
-              className="icon-btn danger rform-remove"
-              aria-label="Hozzávaló törlése"
-              onClick={() =>
-                setIngredients((prev) => prev.filter((_, index) => index !== i))
-              }
+              className="rform-add rform-add-trailing"
+              onClick={() => addIngredient(block.id)}
             >
-              <Icon name="trash" size={12} />
+              <Icon name="plus" size={11} />
+              Hozzávaló
             </button>
           </div>
         ))}
 
         <button
           type="button"
-          className="rform-add rform-add-trailing"
-          onClick={addIngredient}
+          className="rform-add rform-add-trailing rform-add-group"
+          onClick={addGroup}
         >
           <Icon name="plus" size={11} />
-          Hozzávaló
+          Csoport
         </button>
       </section>
 

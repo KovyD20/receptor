@@ -15,6 +15,7 @@ import {
 
 const SORT_MODES = [
   { id: "name", label: "Név szerint" },
+  { id: "course", label: "Kategória szerint" },
   { id: "availability", label: "Ami megvan" },
 ];
 

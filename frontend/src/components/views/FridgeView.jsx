@@ -19,6 +19,7 @@ export default function FridgeView({
   onCategoryColorChange,
   onCategoryColorReset,
   onUpdateItem,
+  onSetItemAmount,
   onDeleteItem,
   onAddItem,
   onGoToNew,
@@ -107,6 +108,16 @@ export default function FridgeView({
                   imageUrl={item.imageUrl}
                   showThumb={!isMobile}
                   qtyLabel={`${item.amount} ${item.unit}`}
+                  amount={item.amount}
+                  unit={item.unit}
+                  units={units}
+                  onAmountChange={
+                    onSetItemAmount &&
+                    ((amount) => onSetItemAmount(item, { amount }))
+                  }
+                  onUnitChange={
+                    onSetItemAmount && ((unit) => onSetItemAmount(item, { unit }))
+                  }
                   onIncrement={() => onUpdateItem(item, 1)}
                   onDecrement={() => onUpdateItem(item, -1)}
                   disableDecrement={item.amount <= 1}
