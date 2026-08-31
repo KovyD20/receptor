@@ -3,6 +3,12 @@ import "./NewRecipeForm.css";
 import Icon from "../Icon/Icon";
 import { SYSTEM_UNITS } from "../../constants/units";
 import {
+  MAIN_TAGS,
+  isMainTag,
+  mainTagColor,
+  mainTagOf,
+} from "../../constants/recipeTags";
+import {
   ACCEPTED_TYPES,
   IMAGE_ERROR,
   validateImageFile,
@@ -148,6 +154,34 @@ export default function NewRecipeForm({
       prev.map((ing, i) => (i === index ? { ...ing, [field]: value } : ing)),
     );
 
+  const ingredientNameRefs = useRef([]);
+  const stepRefs = useRef([]);
+  const pendingFocusRef = useRef(null);
+
+  useEffect(() => {
+    const pending = pendingFocusRef.current;
+    if (!pending) return;
+    pendingFocusRef.current = null;
+    const refs = pending.list === "ingredients" ? ingredientNameRefs : stepRefs;
+    refs.current[pending.index]?.focus();
+  });
+
+  const addIngredient = () => {
+    pendingFocusRef.current = { list: "ingredients", index: ingredients.length };
+    setIngredients((prev) => [...prev, emptyIngredient()]);
+  };
+
+  const addOnEnterFromLast = (index, count) => (event) => {
+    if (event.key !== "Enter" || index !== count - 1) return;
+    event.preventDefault();
+    addIngredient();
+  };
+
+  const addStep = () => {
+    pendingFocusRef.current = { list: "steps", index: steps.length };
+    setSteps((prev) => [...prev, ""]);
+  };
+
   const submit = async () => {
     if (!name.trim()) {
       showToast("A recept neve kötelező", "error");
@@ -164,6 +198,11 @@ export default function NewRecipeForm({
 
     if (steps.length === 0 || steps.some((s) => !s.trim())) {
       showToast("Lépések hiányosak", "error");
+      return;
+    }
+
+    if (!mainTagOf({ tags: selectedTags })) {
+      showToast("Válassz fő kategóriát", "error");
       return;
     }
 
@@ -207,6 +246,13 @@ export default function NewRecipeForm({
   const addTag = () => {
     const tag = newTag.trim();
     if (!tag) return;
+
+    if (isMainTag(tag)) {
+      setSelectedTags((prev) => [...prev.filter((t) => !isMainTag(t)), tag]);
+      setNewTag("");
+      return;
+    }
+
     onAddTag?.(tag);
     setSelectedTags((prev) => (prev.includes(tag) ? prev : [...prev, tag]));
     setNewTag("");
@@ -249,7 +295,7 @@ export default function NewRecipeForm({
           <button
             type="button"
             className="rform-add"
-            onClick={() => setIngredients((prev) => [...prev, emptyIngredient()])}
+            onClick={addIngredient}
           >
             <Icon name="plus" size={11} />
             Hozzávaló
@@ -259,10 +305,12 @@ export default function NewRecipeForm({
         {ingredients.map((ing, i) => (
           <div key={i} className="rform-ing">
             <input
+              ref={(el) => (ingredientNameRefs.current[i] = el)}
               className="field field-neutral rform-ing-name"
               placeholder="Név"
               value={ing.name}
               onChange={(e) => patchIngredient(i, "name", e.target.value)}
+              onKeyDown={addOnEnterFromLast(i, ingredients.length)}
             />
             <input
               className="field field-neutral rform-ing-amount"
@@ -271,6 +319,7 @@ export default function NewRecipeForm({
               placeholder="Menny."
               value={ing.amount}
               onChange={(e) => patchIngredient(i, "amount", e.target.value)}
+              onKeyDown={addOnEnterFromLast(i, ingredients.length)}
             />
             <select
               className="field field-neutral rform-ing-unit"
@@ -296,6 +345,15 @@ export default function NewRecipeForm({
             </button>
           </div>
         ))}
+
+        <button
+          type="button"
+          className="rform-add rform-add-trailing"
+          onClick={addIngredient}
+        >
+          <Icon name="plus" size={11} />
+          Hozzávaló
+        </button>
       </section>
 
       <section className="rform-section">
@@ -304,7 +362,7 @@ export default function NewRecipeForm({
           <button
             type="button"
             className="rform-add"
-            onClick={() => setSteps((prev) => [...prev, ""])}
+            onClick={addStep}
           >
             <Icon name="plus" size={11} />
             Lépés
@@ -315,6 +373,7 @@ export default function NewRecipeForm({
           <div key={i} className="rform-step">
             <span className="step-n">{i + 1}</span>
             <textarea
+              ref={(el) => (stepRefs.current[i] = el)}
               className="field field-neutral rform-textarea"
               placeholder={`${i + 1}. lépés`}
               value={step}
@@ -336,16 +395,57 @@ export default function NewRecipeForm({
             </button>
           </div>
         ))}
+
+        <button
+          type="button"
+          className="rform-add rform-add-trailing"
+          onClick={addStep}
+        >
+          <Icon name="plus" size={11} />
+          Lépés
+        </button>
       </section>
 
       <section className="rform-section">
-        <span className="rform-label">Címkék</span>
+        <span className="rform-label">Fő kategória</span>
+
+        <div className="rform-tags" role="radiogroup" aria-label="Fő kategória">
+          {MAIN_TAGS.map(({ name, color }) => {
+            const active = selectedTags.includes(name);
+            return (
+              <button
+                key={name}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                className={`rform-maintag${active ? " is-active" : ""}`}
+                style={{ "--tag-accent": color }}
+                onClick={() =>
+                  setSelectedTags((prev) => [
+                    ...prev.filter((tag) => !isMainTag(tag)),
+                    ...(active ? [] : [name]),
+                  ])
+                }
+              >
+                {name}
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="rform-section">
+        <span className="rform-label">Saját címkék</span>
 
         <div className="rform-tags">
-          {existingTags.map((tag) => {
+          {existingTags.filter((tag) => !isMainTag(tag)).map((tag) => {
             const active = selectedTags.includes(tag);
             return (
-              <span key={tag} className={`rform-tag${active ? " is-active" : ""}`}>
+              <span
+                key={tag}
+                className={`rform-tag${active ? " is-active" : ""}`}
+                style={{ "--tag-accent": mainTagColor(tag) }}
+              >
                 <button
                   type="button"
                   className="rform-tag-toggle"

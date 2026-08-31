@@ -1,5 +1,11 @@
 import Icon from "../Icon/Icon";
 import {
+  isMainTag,
+  mainTagColor,
+  mainTagOf,
+  sortTags,
+} from "../../constants/recipeTags";
+import {
   availabilityLevel,
   FAVORITES_FILTER,
   recipeAvailability,
@@ -46,6 +52,16 @@ function CardMeta({ recipe, availability }) {
   );
 }
 
+function CourseBadge({ recipe }) {
+  const course = mainTagOf(recipe);
+  if (!course) return null;
+  return (
+    <span className="tag-pill" style={{ "--tag-accent": mainTagColor(course) }}>
+      {course}
+    </span>
+  );
+}
+
 export default function RecipesView({
   recipes,
   totalCount,
@@ -63,7 +79,7 @@ export default function RecipesView({
   onSelectRecipe,
   searchInputRef,
 }) {
-  const chips = ["all", FAVORITES_FILTER, ...allTags];
+  const chips = ["all", FAVORITES_FILTER, ...sortTags(allTags)];
 
   const chipLabel = (tag) => {
     if (tag === "all") return "Mind";
@@ -89,7 +105,12 @@ export default function RecipesView({
           type="button"
           className={`chip${filterTag === tag ? " is-active" : ""}${
             tag === FAVORITES_FILTER ? " chip-fav" : ""
-          }`}
+          }${isMainTag(tag) ? " chip-course" : ""}`}
+          style={
+            tag === "all" || tag === FAVORITES_FILTER
+              ? undefined
+              : { "--tag-accent": mainTagColor(tag) }
+          }
           onClick={() => onFilterChange(tag)}
         >
           {chipLabel(tag)}
@@ -166,15 +187,11 @@ export default function RecipesView({
                     recipe={recipe}
                     availability={availabilityFor(recipe)}
                   />
-                  {!isMobile && recipe.tags?.[0] && (
-                    <span className="tag-pill">{recipe.tags[0]}</span>
-                  )}
+                  {!isMobile && <CourseBadge recipe={recipe} />}
                 </span>
                 {isMobile && (
                   <>
-                    {recipe.tags?.[0] && (
-                      <span className="tag-pill">{recipe.tags[0]}</span>
-                    )}
+                    <CourseBadge recipe={recipe} />
                     <Icon name="chevronRight" size={12} color="#6a6a6a" />
                   </>
                 )}

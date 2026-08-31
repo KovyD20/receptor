@@ -302,6 +302,21 @@
   color: #fff;
 }
 
+.chip-course {
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.chip[style*="--tag-accent"] {
+  border-color: color-mix(in srgb, var(--tag-accent) 55%, transparent);
+  color: var(--tag-accent);
+}
+.chip[style*="--tag-accent"].is-active {
+  background: color-mix(in srgb, var(--tag-accent) 20%, transparent);
+  border-color: var(--tag-accent);
+  color: var(--tag-accent);
+}
+
 .recipe-card {
   position: relative;
   display: flex;
@@ -391,12 +406,13 @@
   margin-top: 4px;
   padding: 4px 11px;
   border-radius: 999px;
-  background: #332226;
+  background: color-mix(in srgb, var(--tag-accent, var(--brand-bright)) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tag-accent, var(--brand-bright)) 45%, transparent);
   font-size: 11px;
   font-weight: 700;
-  color: #e88b8f;
+  color: var(--tag-accent, #e88b8f);
   font-family: var(--font-display);
-  font-variant: all-small-caps;
+  text-transform: uppercase;
   letter-spacing: 0.8px;
 }
 
