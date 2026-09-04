@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import Icon from "../Icon/Icon";
+import { useFocusTrap } from "../../hooks/useFocusTrap";
 import { groupIngredients } from "../../lib/recipes";
 
 export default function CookMode({
@@ -15,21 +16,22 @@ export default function CookMode({
   const index = Math.min(step, Math.max(0, total - 1));
   const isLast = index + 1 >= total;
 
+  const modalRef = useFocusTrap(true, { onEscape: onClose });
+
   useEffect(() => {
     const onKey = (e) => {
-      if (e.key === "Escape") onClose();
-      else if (e.key === "ArrowRight") onStep(index + 1);
+      if (e.key === "ArrowRight") onStep(index + 1);
       else if (e.key === "ArrowLeft") onStep(index - 1);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [index, onStep, onClose]);
+  }, [index, onStep]);
 
   const chips = ingredients.slice(index * 2, index * 2 + 2);
 
   return (
     <div className="cook-overlay" role="dialog" aria-modal="true">
-      <div className="cook-modal">
+      <div className="cook-modal" ref={modalRef} tabIndex={-1}>
         <header className="cook-head">
           <button
             type="button"

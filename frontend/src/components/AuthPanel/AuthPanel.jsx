@@ -6,6 +6,7 @@ import {
 } from "firebase/auth";
 import { auth, googleProvider } from "../../firebase";
 import LightPillar from "../Background/LightPillar";
+import { useSpatialNav } from "../../hooks/useSpatialNav";
 import "./AuthPanel.css";
 
 export default function AuthPanel() {
@@ -13,6 +14,7 @@ export default function AuthPanel() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const { exitField } = useSpatialNav();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -39,7 +41,13 @@ export default function AuthPanel() {
   };
 
   return (
-    <div className="auth-wrap">
+    <div
+      className="auth-wrap"
+      onKeyDown={(e) => {
+        if (e.key !== "Escape") return;
+        if (exitField()) e.preventDefault();
+      }}
+    >
       <div className="auth-bg">
         <LightPillar />
       </div>

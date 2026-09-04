@@ -249,3 +249,17 @@ button {
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
+:focus-visible {
+  outline: 2px solid var(--accent, var(--brand-bright));
+  outline-offset: 2px;
+  border-radius: inherit;
+}
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.item-row:focus-visible,
+.recipe-card:focus-visible {
+  outline-offset: -2px;
+}

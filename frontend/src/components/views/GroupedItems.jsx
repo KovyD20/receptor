@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Icon from "../Icon/Icon";
+import { isPlainKey, isTypingTarget } from "../../lib/keyboard";
 import ColorPicker from "../ColorPicker/ColorPicker";
 import { pantryImageUrl } from "../../lib/pantryImages";
 
@@ -26,6 +27,7 @@ export function GroupCard({
   meta,
   open,
   onToggle,
+  navProps,
   onColorChange,
   onColorReset,
   isCustomColor,
@@ -41,6 +43,17 @@ export function GroupCard({
           className="group-head"
           aria-expanded={open}
           onClick={onToggle}
+          {...navProps}
+          onKeyDown={(event) => {
+            if (!isPlainKey(event)) return;
+            if (event.key === "ArrowRight" && !open) {
+              event.preventDefault();
+              onToggle();
+            } else if (event.key === "ArrowLeft" && open) {
+              event.preventDefault();
+              onToggle();
+            }
+          }}
         >
           <span className="group-name">{category}</span>
           <span className="group-meta">{meta}</span>
@@ -81,7 +94,11 @@ export function GroupCard({
         />
       )}
 
-      {open && <div className="group-body">{children}</div>}
+      {open && (
+        <div className="group-body" role="list">
+          {children}
+        </div>
+      )}
     </div>
   );
 }
@@ -110,9 +127,11 @@ function AmountField({ value, onCommit, onDone }) {
       onBlur={commit}
       onKeyDown={(e) => {
         if (e.key === "Enter") {
+          e.preventDefault();
           commit();
           onDone?.();
         } else if (e.key === "Escape") {
+          e.preventDefault();
           setDraft(null);
           onDone?.();
         }
@@ -139,7 +158,9 @@ export function ItemRow({
   onDecrement,
   onDelete,
   disableDecrement,
+  navProps,
 }) {
+  const rowRef = useRef(null);
   const [thumbFailed, setThumbFailed] = useState(false);
   const [editing, setEditing] = useState(false);
   const thumbSrc = showThumb ? pantryImageUrl({ nameKey, imageUrl }) : null;
@@ -147,12 +168,59 @@ export function ItemRow({
   const canEdit = Boolean(onAmountChange || onUnitChange);
   const isEditing = canEdit && editing;
 
+  const stopEditing = () => {
+    setEditing(false);
+    rowRef.current?.focus();
+  };
+
+  const handleKeyDown = (event) => {
+    if (isTypingTarget(event) || !isPlainKey(event)) return;
+
+    const run = (handler) => {
+      if (!handler) return;
+      event.preventDefault();
+      handler();
+    };
+
+    switch (event.key) {
+      case "ArrowRight":
+        run(onIncrement);
+        break;
+      case "ArrowLeft":
+        if (!disableDecrement) run(onDecrement);
+        break;
+      case " ":
+        run(onToggleDone);
+        break;
+      case "Delete":
+      case "Backspace":
+        run(onDelete);
+        break;
+      case "Enter":
+        if (canEdit) {
+          event.preventDefault();
+          setEditing(true);
+        }
+        break;
+      default:
+        break;
+    }
+  };
+
   return (
-    <div className="item-row">
+    <div
+      ref={rowRef}
+      className="item-row"
+      role="listitem"
+      aria-label={name}
+      onKeyDown={handleKeyDown}
+      {...navProps}
+    >
       {onToggleDone && (
         <button
           type="button"
           className={`item-check${done ? " is-done" : ""}`}
+          tabIndex={-1}
           aria-pressed={Boolean(done)}
           aria-label={`${name} megvéve`}
           onClick={onToggleDone}
@@ -182,6 +250,7 @@ export function ItemRow({
         <button
           type="button"
           className="icon-btn"
+          tabIndex={-1}
           aria-label="Csökkentés"
           disabled={disableDecrement}
           onClick={onDecrement}
@@ -192,7 +261,7 @@ export function ItemRow({
           <AmountField
             value={amount}
             onCommit={onAmountChange}
-            onDone={() => setEditing(false)}
+            onDone={stopEditing}
           />
         ) : (
           <span className="item-qty">{qtyLabel}</span>
@@ -217,6 +286,7 @@ export function ItemRow({
         <button
           type="button"
           className="icon-btn"
+          tabIndex={-1}
           aria-label="Növelés"
           onClick={onIncrement}
         >
@@ -228,9 +298,10 @@ export function ItemRow({
         <button
           type="button"
           className={`icon-btn item-edit${isEditing ? " is-active" : ""}`}
+          tabIndex={-1}
           aria-label={`${name} mennyiségének módosítása`}
           aria-pressed={isEditing}
-          onClick={() => setEditing((prev) => !prev)}
+          onClick={() => (isEditing ? stopEditing() : setEditing(true))}
         >
           <Icon name={isEditing ? "check" : "pen"} size={11} />
         </button>
@@ -239,6 +310,7 @@ export function ItemRow({
       <button
         type="button"
         className="icon-btn danger"
+        tabIndex={-1}
         aria-label={`${name} törlése`}
         onClick={onDelete}
       >

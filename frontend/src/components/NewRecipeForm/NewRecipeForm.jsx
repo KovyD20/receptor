@@ -104,6 +104,7 @@ function ImagePicker({ previewUrl, hasImage, disabled, onPick, onClear }) {
         <input
           ref={inputRef}
           className="rform-image-input"
+          tabIndex={-1}
           type="file"
           accept={ACCEPTED_TYPES.join(",")}
           onChange={(e) => {
@@ -349,8 +350,14 @@ export default function NewRecipeForm({
     setNewTag("");
   };
 
+  const handleFormKeyDown = (event) => {
+    if (event.key !== "Enter" || !(event.ctrlKey || event.metaKey)) return;
+    event.preventDefault();
+    if (!saving) submit();
+  };
+
   return (
-    <div className="rform">
+    <div className="rform" onKeyDown={handleFormKeyDown}>
       <label className="rform-field">
         <span className="rform-label">Recept neve</span>
         <input

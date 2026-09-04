@@ -1,4 +1,6 @@
 import Icon from "../Icon/Icon";
+import { isPlainKey } from "../../lib/keyboard";
+import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import {
   isMainTag,
   mainTagColor,
@@ -78,8 +80,14 @@ export default function RecipesView({
   onFilterChange,
   onSearchChange,
   onSelectRecipe,
+  onToggleFavorite,
   searchInputRef,
 }) {
+  const {
+    containerRef: navContainerRef,
+    onKeyDown: onNavKeyDown,
+    itemProps: navItemProps,
+  } = useListKeyboardNav({ layout: "grid" });
   const chips = ["all", FAVORITES_FILTER, ...sortTags(allTags)];
 
   const chipLabel = (tag) => {
@@ -146,7 +154,12 @@ export default function RecipesView({
         </div>
       )}
 
-      <div className="view-scroll">
+      <div
+        className="view-scroll"
+        ref={navContainerRef}
+        tabIndex={-1}
+        onKeyDown={onNavKeyDown}
+      >
         {recipes.length === 0 ? (
           <div className="empty-state">
             {totalCount === 0
@@ -155,7 +168,7 @@ export default function RecipesView({
           </div>
         ) : (
           <div className="grid grid-4">
-            {recipes.map((recipe) => (
+            {recipes.map((recipe, index) => (
               <button
                 key={recipe.id}
                 type="button"
@@ -163,6 +176,13 @@ export default function RecipesView({
                   recipe.id === selectedId ? " is-selected" : ""
                 }`}
                 onClick={() => onSelectRecipe(recipe)}
+                {...navItemProps(recipe.id, { first: index === 0 })}
+                onKeyDown={(event) => {
+                  if (!isPlainKey(event)) return;
+                  if (event.key.toLowerCase() !== "f" || !onToggleFavorite) return;
+                  event.preventDefault();
+                  onToggleFavorite(recipe);
+                }}
               >
                 <span className="recipe-card-art">
                   {recipe.imageUrl ? (

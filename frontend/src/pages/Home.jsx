@@ -12,12 +12,16 @@ import NewRecipeView from "../components/views/NewRecipeView";
 import CookMode from "../components/views/CookMode";
 import NewRecipeForm from "../components/NewRecipeForm/NewRecipeForm";
 import LoadingBanner from "../components/LoadingBanner/LoadingBanner";
+import ShortcutsHelp from "../components/ShortcutsHelp/ShortcutsHelp";
 
 import "./Home.css";
 import { SYSTEM_UNITS } from "../constants/units";
 import { useRecipes } from "../hooks/useRecipes";
 import { useInventory } from "../hooks/useInventory";
 import { useIsMobile } from "../hooks/useIsMobile";
+import { useGlobalKeys } from "../hooks/useGlobalKeys";
+import { useSpatialNav } from "../hooks/useSpatialNav";
+import { isTypingTarget } from "../lib/keyboard";
 import { useCategoryColors } from "../hooks/useCategoryColors";
 import { useCatalog } from "../context/CatalogContext";
 import { useToast } from "../context/ToastContext";
@@ -78,6 +82,8 @@ function filterGroups(groups, search) {
     }))
     .filter((group) => group.items.length > 0);
 }
+
+const TAB_IDS = TABS.map((t) => t.id);
 
 const SCREEN_TITLES = {
   receptek: "Receptek",
@@ -149,6 +155,7 @@ export default function Home({ user }) {
   const [servingsFor, setServingsFor] = useState({});
   const [cooking, setCooking] = useState(false);
   const [cookStep, setCookStep] = useState(0);
+  const [helpOpen, setHelpOpen] = useState(false);
   const searchInputRef = useRef(null);
   const loadedToastShown = useRef(false);
 
@@ -314,12 +321,56 @@ export default function Home({ user }) {
   };
 
   const focusSearch = () => {
-    if (tab === "receptek") {
+    if (!isMobile || tab === "receptek") {
       searchInputRef.current?.focus();
+      searchInputRef.current?.select();
       return;
     }
-    setSearchOpen((prev) => !prev);
+    setSearchOpen(true);
   };
+
+  const focusHome = () => {
+    const home = document.querySelector("[data-nav-home]");
+    if (!home) return false;
+    home.focus();
+    return true;
+  };
+
+  const { exitField } = useSpatialNav({ onFallback: focusHome });
+
+  const handleEscape = () => {
+    if (helpOpen) {
+      setHelpOpen(false);
+      return true;
+    }
+    if (cooking) {
+      setCooking(false);
+      return true;
+    }
+    if (editingRecipe || showManualForm) {
+      if (isTypingTarget(document.activeElement)) return exitField();
+      setEditingRecipe(null);
+      setShowManualForm(false);
+      focusHome();
+      return true;
+    }
+    if (searchOpen) {
+      setSearchOpen(false);
+      focusHome();
+      return true;
+    }
+    if (exitField()) return true;
+    if (document.activeElement?.hasAttribute?.("data-nav-home")) return false;
+    return focusHome();
+  };
+
+  useGlobalKeys({
+    tabIds: TAB_IDS,
+    onSelectTab: goToTab,
+    onFocusSearch: focusSearch,
+    onToggleHelp: () => setHelpOpen((prev) => !prev),
+    onEscape: handleEscape,
+  });
 
   const renderTab = () => {
     if (tab === "receptek") {
@@ -340,6 +391,7 @@ export default function Home({ user }) {
           onFilterChange={setFilterTag}
           onSearchChange={setSearch}
           onSelectRecipe={openRecipe}
+          onToggleFavorite={handleToggleFavorite}
         />
       );
     }
@@ -580,7 +632,8 @@ export default function Home({ user }) {
                 type="button"
                 className="icon-btn topbar-icon"
                 aria-label="Keresés"
-                onClick={focusSearch}
+                aria-expanded={searchOpen}
+                onClick={() => setSearchOpen((prev) => !prev)}
               >
                 <Icon name="search" size={14} />
               </button>
@@ -613,6 +666,15 @@ export default function Home({ user }) {
                 </div>
               </div>
               <div className="topbar-user">
+                <button
+                  type="button"
+                  className="icon-btn topbar-icon topbar-help"
+                  aria-label="Gyorsbillentyűk"
+                  title="Gyorsbillentyűk (?)"
+                  onClick={() => setHelpOpen(true)}
+                >
+                  ?
+                </button>
                 <span className="topbar-email">
                   {user?.email || "Ismeretlen email"}
                 </span>
@@ -659,6 +721,7 @@ export default function Home({ user }) {
                     className={`tab-top${tab === t.id ? " is-active" : ""}`}
                     style={{ "--accent": t.accent }}
                     aria-current={tab === t.id}
+                    data-nav-home={tab === t.id ? "" : undefined}
                     onClick={() => goToTab(t.id)}
                   >
                     <Icon name={t.icon} size={14} />
@@ -691,6 +754,7 @@ export default function Home({ user }) {
                 className={`tab-bottom${tab === t.id ? " is-active" : ""}`}
                 style={{ "--accent": t.accent }}
                 aria-current={tab === t.id}
+                data-nav-home={tab === t.id ? "" : undefined}
                 onClick={() => goToTab(t.id)}
               >
                 <span className="tab-bottom-icon">
@@ -703,6 +767,8 @@ export default function Home({ user }) {
           })}
         </nav>
       )}
+
+      {helpOpen && <ShortcutsHelp onClose={() => setHelpOpen(false)} />}
 
       {cooking && selectedRecipe && steps.length > 0 && (
         <CookMode
