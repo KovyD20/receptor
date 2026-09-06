@@ -169,10 +169,18 @@ describe("useInventory shop-package rounding", () => {
     );
   });
 
-  it("drops the origin note when the rounded amount merges into an existing item", async () => {
+  it("rounds the accumulated total once, not each recipe on its own", async () => {
     purchaseByName.set("liszt", { unit: "kg", amount: 1 });
     const { result } = mountLoaded([
-      { id: "s1", name: "liszt", amount: 1, unit: "kg", sourceAmount: 2, sourceUnit: "tk" },
+      {
+        id: "s1",
+        name: "liszt",
+        amount: 1,
+        unit: "kg",
+        sourceAmount: 0,
+        sourceUnit: "",
+        sourceLoose: true,
+      },
     ]);
 
     await act(async () => {
@@ -185,11 +193,141 @@ describe("useInventory shop-package rounding", () => {
     expect(firestoreMock.updateDoc).toHaveBeenCalledWith(
       { path: `${shopPath("u1")}/s1` },
       {
-        amount: 2,
+        amount: 1,
         name: "liszt",
-        sourceAmount: DELETE_FIELD,
-        sourceUnit: DELETE_FIELD,
+        unit: "kg",
+        sourceAmount: 500,
+        sourceUnit: "g",
+        sourceLoose: true,
       },
+    );
+  });
+
+  it("buys one package for a pinch, however many recipes ask for one", async () => {
+    purchaseByName.set("só", { unit: "kg", amount: 1 });
+    const { result } = mountLoaded();
+
+    await act(async () => {
+      await result.current.addToShoppingList([
+        { name: "só", amount: 1, unit: "csipet" },
+        { name: "só", amount: 1, unit: "csipet" },
+        { name: "só", amount: 1, unit: "csipet" },
+      ]);
+    });
+
+    expect(firestoreMock.addDoc).toHaveBeenCalledWith(
+      { path: shopPath("u1") },
+      { name: "só", amount: 1, unit: "kg", sourceAmount: 0, sourceUnit: "", sourceLoose: true },
+    );
+  });
+
+  it("adds up the raw quantities before rounding them", async () => {
+    purchaseByName.set("tejföl", { unit: "g", amount: 330 });
+    const { result } = mountLoaded();
+
+    await act(async () => {
+      await result.current.addToShoppingList([
+        { name: "tejföl", amount: 200, unit: "g" },
+        { name: "tejföl", amount: 200, unit: "g" },
+        { name: "tejföl", amount: 200, unit: "g" },
+      ]);
+    });
+
+    expect(firestoreMock.addDoc).toHaveBeenCalledWith(
+      { path: shopPath("u1") },
+      { name: "tejföl", amount: 660, unit: "g", sourceAmount: 600, sourceUnit: "g" },
+    );
+  });
+
+  it("merges the same item across several lines of one call into one row", async () => {
+    purchaseByName.set("tojás", { unit: "db", amount: 10 });
+    const { result } = mountLoaded();
+
+    await act(async () => {
+      await result.current.addToShoppingList([
+        { name: "tojás", amount: 6, unit: "db" },
+        { name: "tojás", amount: 6, unit: "db" },
+      ]);
+    });
+
+    expect(firestoreMock.addDoc).toHaveBeenCalledTimes(1);
+    expect(firestoreMock.addDoc).toHaveBeenCalledWith(
+      { path: shopPath("u1") },
+      { name: "tojás", amount: 20, unit: "db", sourceAmount: 12, sourceUnit: "db" },
+    );
+  });
+
+  it("keeps unaddable units apart when the item has no package to round to", async () => {
+    const { result } = mountLoaded();
+
+    await act(async () => {
+      await result.current.addToShoppingList([
+        { name: "bors", amount: 1.5, unit: "tk" },
+        { name: "bors", amount: 10, unit: "szem" },
+      ]);
+    });
+
+    expect(firestoreMock.addDoc).toHaveBeenCalledTimes(2);
+    expect(firestoreMock.addDoc).toHaveBeenCalledWith(
+      { path: shopPath("u1") },
+      { name: "bors", amount: 1.5, unit: "tk" },
+    );
+    expect(firestoreMock.addDoc).toHaveBeenCalledWith(
+      { path: shopPath("u1") },
+      { name: "bors", amount: 10, unit: "szem" },
+    );
+  });
+
+  it("still merges compatible units on an item with no package data", async () => {
+    const { result } = mountLoaded();
+
+    await act(async () => {
+      await result.current.addToShoppingList([
+        { name: "kapor", amount: 500, unit: "g" },
+        { name: "kapor", amount: 1, unit: "kg" },
+      ]);
+    });
+
+    expect(firestoreMock.addDoc).toHaveBeenCalledTimes(1);
+    expect(firestoreMock.addDoc).toHaveBeenCalledWith(
+      { path: shopPath("u1") },
+      { name: "kapor", amount: 1500, unit: "g" },
+    );
+  });
+
+  it("does not fold an unaddable ask into an existing row of another unit", async () => {
+    const { result } = mountLoaded([
+      { id: "s1", name: "bors", amount: 1.5, unit: "tk" },
+    ]);
+
+    await act(async () => {
+      await result.current.addToShoppingList([
+        { name: "bors", amount: 10, unit: "szem" },
+      ]);
+    });
+
+    expect(firestoreMock.updateDoc).not.toHaveBeenCalled();
+    expect(firestoreMock.addDoc).toHaveBeenCalledWith(
+      { path: shopPath("u1") },
+      { name: "bors", amount: 10, unit: "szem" },
+    );
+  });
+
+  it("tops up a hand-entered row instead of recomputing it away", async () => {
+    purchaseByName.set("liszt", { unit: "kg", amount: 1 });
+    const { result } = mountLoaded([
+      { id: "s1", name: "liszt", amount: 3, unit: "kg" },
+    ]);
+
+    await act(async () => {
+      await result.current.addToShoppingList([
+        { name: "liszt", amount: 500, unit: "g" },
+      ]);
+    });
+
+    expect(firestoreMock.updateDoc).toHaveBeenCalledWith(
+      { path: `${shopPath("u1")}/s1` },
+      { amount: 4, name: "liszt" },
     );
   });
 });
@@ -337,6 +475,7 @@ describe("setShoppingItemAmount / setFridgeItemAmount", () => {
         unit: "kg",
         sourceAmount: DELETE_FIELD,
         sourceUnit: DELETE_FIELD,
+        sourceLoose: DELETE_FIELD,
       },
     );
   });

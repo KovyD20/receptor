@@ -17,10 +17,9 @@ import {
   convertAmount,
   normalizeUnit,
   stripAmountsAndUnits,
-  toPurchaseAmount,
   unitInfo,
 } from "../lib/units";
-import { upsertInventoryItem } from "../lib/inventory";
+import { upsertInventoryItem, upsertPurchaseItem } from "../lib/inventory";
 
 const BATCH_LIMIT = 500;
 
@@ -101,26 +100,37 @@ export function useInventory(uid) {
   );
 
   const addToShoppingList = async (ingredients) => {
+    const groups = new Map();
     for (const ing of ingredients) {
       const rawName = (ing?.name || "").toString().trim();
       if (!rawName) continue;
       const amount = Number(ing?.amount || 0);
       if (!amount || amount <= 0) continue;
 
-      const unit = normalizeUnit(ing?.unit);
+      const nameKey = normalizeName(rawName);
       const purchase = getCatalogItemByName(rawName)?.purchase;
-      const buy = toPurchaseAmount(amount, unit, purchase);
+      const hasPackage = Boolean(purchase?.unit) && Number(purchase?.amount) > 0;
 
-      await upsertInventoryItem({
+      const unit = normalizeUnit(ing?.unit);
+      const { kind } = unitInfo(unit);
+      const bucket =
+        kind === "mass" || kind === "volume" ? kind : unit;
+      const key = hasPackage ? nameKey : `${nameKey}|${bucket}`;
+
+      const group = groups.get(key) || { name: rawName, purchase, asks: [] };
+      group.asks.push({ amount, unit });
+      groups.set(key, group);
+    }
+
+    for (const group of groups.values()) {
+      await upsertPurchaseItem({
         db,
         uid,
-        collectionName: "shoppingList",
         list: shoppingList,
-        canonicalName: canonicalizeName(rawName),
-        unit: buy.unit,
-        mergeAmount: buy.amount,
+        canonicalName: canonicalizeName(group.name),
+        asks: group.asks,
+        purchase: group.purchase,
         nameKeyOf: normalizeName,
-        purchaseSource: buy.rounded ? { amount, unit } : null,
       });
     }
   };
@@ -149,6 +159,13 @@ export function useInventory(uid) {
     await updateDoc(doc(db, "users", uid, "shoppingList", item.id), {
       amount: nextAmount,
       name: canonicalName || item?.name,
+      ...(item.sourceAmount === undefined && item.sourceLoose === undefined
+        ? {}
+        : {
+            sourceAmount: deleteField(),
+            sourceUnit: deleteField(),
+            sourceLoose: deleteField(),
+          }),
     });
   };
 
@@ -180,9 +197,13 @@ export function useInventory(uid) {
       await updateDoc(doc(db, "users", uid, collectionName, item.id), {
         amount: nextAmount,
         unit: nextUnit,
-        ...(item.sourceAmount === undefined
+        ...(item.sourceAmount === undefined && item.sourceLoose === undefined
           ? {}
-          : { sourceAmount: deleteField(), sourceUnit: deleteField() }),
+          : {
+              sourceAmount: deleteField(),
+              sourceUnit: deleteField(),
+              sourceLoose: deleteField(),
+            }),
       });
     };
 

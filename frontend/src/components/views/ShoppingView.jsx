@@ -288,7 +288,11 @@ export default function ShoppingView({
                       ((unit) => onSetItemAmount(item, { unit }))
                     }
                     note={
-                      item.sourceAmount
+                      item.sourceAmount &&
+                      !(
+                        item.sourceAmount === item.amount &&
+                        (item.sourceUnit || "") === (item.unit || "")
+                      )
                         ? `recept: ${item.sourceAmount} ${item.sourceUnit || ""}`.trim()
                         : null
                     }

@@ -62,39 +62,88 @@ export function convertAmount(amount, fromInfo, toInfo) {
 const MAX_PURCHASE_PACKAGES = 20;
 const PACKAGE_EPSILON = 1e-9;
 
-export function toPurchaseAmount(amount, unit, purchase) {
-  const original = { amount, unit, rounded: false };
+function trimFloat(value) {
+  return Math.round(value * 1000) / 1000;
+}
+
+export function accumulatePurchase(asks, purchase, previous = null) {
+  const list = (Array.isArray(asks) ? asks : [])
+    .map((ask) => ({ amount: Number(ask?.amount), unit: normalizeUnit(ask?.unit) }))
+    .filter((ask) => Number.isFinite(ask.amount) && ask.amount > 0);
 
   const packageAmount = Number(purchase?.amount);
   const packageUnit = normalizeUnit(purchase?.unit);
-  if (!packageUnit || !Number.isFinite(packageAmount) || packageAmount <= 0) {
-    return original;
+  const hasPackage =
+    Boolean(packageUnit) && Number.isFinite(packageAmount) && packageAmount > 0;
+
+  if (!hasPackage) {
+    if (list.length === 0) return { amount: 0, unit: "", source: null, rounded: false };
+
+    const target = unitInfo(list[0].unit);
+    let sum = 0;
+    for (const ask of list) {
+      const from = unitInfo(ask.unit);
+      if (!areUnitsCompatible(from, target)) continue;
+      sum += convertAmount(ask.amount, from, target);
+    }
+    return {
+      amount: trimFloat(sum),
+      unit: target.unit,
+      source: null,
+      rounded: false,
+    };
   }
 
-  const numericAmount = Number(amount);
-  if (!Number.isFinite(numericAmount) || numericAmount <= 0) return original;
-
-  const from = unitInfo(unit);
   const to = unitInfo(packageUnit);
 
-  if (!areUnitsCompatible(from, to)) {
-    return { amount: packageAmount, unit: packageUnit, rounded: true };
-  }
+  let totalUnit = previous?.amount > 0 ? normalizeUnit(previous.unit) : "";
+  let total = previous?.amount > 0 ? Number(previous.amount) : 0;
+  let loose = Boolean(previous?.loose);
 
-  const converted = convertAmount(numericAmount, from, to);
-  const packages = Math.ceil(converted / packageAmount - PACKAGE_EPSILON);
+  for (const ask of list) {
+    const from = unitInfo(ask.unit);
+    if (!areUnitsCompatible(from, to)) {
+      loose = true;
+      continue;
+    }
+    if (!totalUnit) {
+      totalUnit = from.unit;
+      total = ask.amount;
+      continue;
+    }
+    total += convertAmount(ask.amount, from, unitInfo(totalUnit));
+  }
+  total = trimFloat(total);
+
+  const source =
+    total > 0
+      ? { amount: total, unit: totalUnit, ...(loose ? { loose: true } : {}) }
+      : loose
+        ? { amount: 0, unit: "", loose: true }
+        : null;
+
+  const convertedTotal =
+    total > 0 ? convertAmount(total, unitInfo(totalUnit), to) : 0;
+  let packages =
+    convertedTotal > 0
+      ? Math.ceil(convertedTotal / packageAmount - PACKAGE_EPSILON)
+      : 0;
+  if (loose) packages = Math.max(packages, 1);
+
+  if (packages <= 0) return { amount: 0, unit: packageUnit, source, rounded: false };
 
   if (packages > MAX_PURCHASE_PACKAGES) {
     console.warn(
-      `toPurchaseAmount: ${numericAmount} ${from.unit} is ${packages} x ${packageAmount} ${packageUnit} — leaving the amount unchanged.`,
+      `accumulatePurchase: ${total} ${totalUnit} is ${packages} x ${packageAmount} ${packageUnit} — leaving the amount unchanged.`,
     );
-    return original;
+    return { amount: total, unit: totalUnit, source, rounded: false };
   }
 
-  const rounded = Math.round(packages * packageAmount * 1000) / 1000;
+  const amount = trimFloat(packages * packageAmount);
   return {
-    amount: rounded,
+    amount,
     unit: packageUnit,
-    rounded: rounded !== numericAmount || packageUnit !== from.unit,
+    source,
+    rounded: amount !== total || packageUnit !== totalUnit,
   };
 }
