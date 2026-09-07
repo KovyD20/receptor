@@ -464,6 +464,23 @@
   color: var(--text-dim);
 }
 
+.recipe-source {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  font-size: 13px;
+  color: var(--text-dim);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.recipe-source:hover {
+  color: var(--blue);
+  text-decoration: underline;
+}
+
 .servings {
   display: flex;
   align-items: center;
@@ -1179,6 +1196,19 @@
 .form-shell-head .icon-btn {
   width: 34px;
   height: 34px;
+}
+
+.form-shell-note {
+  padding: 10px 18px;
+  border-bottom: 1px solid #333;
+  background: rgba(63, 160, 255, 0.08);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+.form-shell-note span {
+  color: var(--blue);
+  word-break: break-all;
 }
 
 .cook-overlay {

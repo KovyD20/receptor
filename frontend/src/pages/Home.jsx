@@ -148,6 +148,7 @@ export default function Home({ user }) {
   const [selectedId, setSelectedId] = useState(null);
   const [editingRecipe, setEditingRecipe] = useState(null);
   const [showManualForm, setShowManualForm] = useState(false);
+  const [importedRecipe, setImportedRecipe] = useState(null);
   const [filterTag, setFilterTag] = useState("all");
   const [sortMode, setSortMode] = useState("name");
   const [search, setSearch] = useState("");
@@ -329,6 +330,11 @@ export default function Home({ user }) {
     setSearchOpen(true);
   };
 
+  const closeManualForm = () => {
+    setShowManualForm(false);
+    setImportedRecipe(null);
+  };
+
   const focusHome = () => {
     const home = document.querySelector("[data-nav-home]");
     if (!home) return false;
@@ -350,7 +356,7 @@ export default function Home({ user }) {
     if (editingRecipe || showManualForm) {
       if (isTypingTarget(document.activeElement)) return exitField();
       setEditingRecipe(null);
-      setShowManualForm(false);
+      closeManualForm();
       focusHome();
       return true;
     }
@@ -561,29 +567,44 @@ export default function Home({ user }) {
         <div className="form-view">
           <div className="form-shell" style={{ "--accent": "var(--brand)" }}>
             <header className="form-shell-head">
-              <span className="panel-title">Új saját recept</span>
+              <span className="panel-title">
+                {importedRecipe ? "Beolvasott recept" : "Új saját recept"}
+              </span>
               <button
                 type="button"
                 className="icon-btn"
                 aria-label="Űrlap bezárása"
-                onClick={() => setShowManualForm(false)}
+                onClick={closeManualForm}
               >
                 <Icon name="xmark" size={14} />
               </button>
             </header>
+            {importedRecipe && (
+              <div className="form-shell-note">
+                Beolvasva innen: <span>{importedRecipe.sourceUrl}</span> — nézd át,
+                mielőtt mented.
+              </div>
+            )}
             <NewRecipeForm
+              key={importedRecipe ? `imported-${importedRecipe.sourceUrl}` : "blank"}
+              recipe={importedRecipe?.recipe}
               existingTags={allTags}
               onAddTag={addTag}
               onDeleteTag={deleteTagGlobally}
               onCreate={async (data, imageOpts) => {
                 try {
-                  await createRecipe(data, imageOpts);
-                  setShowManualForm(false);
+                  await createRecipe(
+                    importedRecipe
+                      ? { ...data, sourceUrl: importedRecipe.sourceUrl }
+                      : data,
+                    imageOpts,
+                  );
+                  closeManualForm();
                   showToast("Recept elmentve", "success");
                   goToTab("receptek");
                 } catch (err) {
                   if (err?.stage === "image") {
-                    setShowManualForm(false);
+                    closeManualForm();
                     goToTab("receptek");
                   }
                   notifyError(
@@ -606,6 +627,10 @@ export default function Home({ user }) {
         isMobile={isMobile}
         onStartManual={() => setShowManualForm(true)}
         onSaveAiRecipe={createRecipe}
+        onImported={(recipe, sourceUrl) => {
+          setImportedRecipe({ recipe, sourceUrl });
+          setShowManualForm(true);
+        }}
       />
     );
   };

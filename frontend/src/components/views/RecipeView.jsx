@@ -76,6 +76,32 @@ function CourseBadge({ recipe }) {
   );
 }
 
+function SourceLink({ recipe }) {
+  const raw = recipe.sourceUrl;
+  if (!raw) return null;
+
+  let url;
+  try {
+    url = new URL(raw);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+
+  return (
+    <a
+      className="recipe-source"
+      href={url.href}
+      title={url.href}
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <Icon name="link" size={11} />
+      {url.hostname.replace(/^www\./, "")}
+    </a>
+  );
+}
+
 function StepRow({ index, text }) {
   return (
     <div className="step-row">
@@ -165,6 +191,7 @@ export default function RecipeView({
             <div className="recipe-head-name">{recipe.name}</div>
             <div className="recipe-head-meta">{recipeMeta(recipe)}</div>
             <CourseBadge recipe={recipe} />
+            <SourceLink recipe={recipe} />
           </div>
         </div>
 
@@ -244,6 +271,7 @@ export default function RecipeView({
           <div className="recipe-head-name">{recipe.name}</div>
           <div className="recipe-head-meta">{recipeMeta(recipe)}</div>
           <CourseBadge recipe={recipe} />
+          <SourceLink recipe={recipe} />
         </div>
         {tools}
         <button

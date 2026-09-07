@@ -1,16 +1,20 @@
 import Icon from "../Icon/Icon";
 import AiRecipePanel from "../AiRecipePanel/AiRecipePanel";
+import ImportRecipePanel from "../ImportRecipePanel/ImportRecipePanel";
 
 export default function NewRecipeView({
   fridge,
   isMobile,
   onStartManual,
   onSaveAiRecipe,
+  onImported,
 }) {
   return (
     <div className="new-view">
       <div className="new-wrap">
         <div className="new-title">Hogyan kerüljön be az új recept?</div>
+
+        <ImportRecipePanel onImported={onImported} />
 
         <div className="new-cards">
           <button
