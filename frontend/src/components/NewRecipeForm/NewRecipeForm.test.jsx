@@ -6,6 +6,8 @@ const showToast = vi.fn();
 vi.mock("../../context/ToastContext", () => ({ useToast: () => ({ showToast }) }));
 vi.mock("../../context/ConfirmContext", () => ({ useConfirm: () => async () => true }));
 
+vi.mock("../../firebase", () => ({ storage: {} }));
+
 const { default: NewRecipeForm } = await import("./NewRecipeForm");
 
 beforeEach(() => {
