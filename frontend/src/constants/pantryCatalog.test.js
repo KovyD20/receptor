@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { normalizeCatalogText, createCatalog } from "./pantryCatalog.js";
+import sharedCases from "../../../shared/normalizeCatalogText.cases.json";
 
 const catalogData = {
   categories: [
@@ -117,5 +118,16 @@ describe("createCatalog package data", () => {
       amount: 1,
     });
     expect(items.find((i) => i.id === "1").purchase).toBeNull();
+  });
+});
+
+describe("normalizeCatalogText agrees with the shared cases", () => {
+  it.each(sharedCases.cases)("$in -> $out", ({ in: input, out }) => {
+    expect(normalizeCatalogText(input)).toBe(out);
+  });
+
+  it("returns an empty string for nullish input", () => {
+    expect(normalizeCatalogText(null)).toBe("");
+    expect(normalizeCatalogText(undefined)).toBe("");
   });
 });

@@ -11,8 +11,9 @@ const { RAW_CATALOG_ROWS } = await import(
   "../../../backend/scripts/pantrySeedData.js"
 );
 
-const normalizeCategory = (value) =>
-  (value || "").toString().trim().replace(/^\d+\.\s*/, "").trim();
+const { normalizeCategory } = await import(
+  "../../../backend/lib/buildPantryCatalog.js"
+);
 
 const seedCategories = [
   ...new Set(RAW_CATALOG_ROWS.map((row) => normalizeCategory(row.category))),
