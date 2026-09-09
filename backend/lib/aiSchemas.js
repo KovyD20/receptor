@@ -2,6 +2,7 @@ const { Type } = require("./aiClient");
 
 const AI_ALLOWED_UNITS = [
   "db",
+  "szem",
   "g",
   "dkg",
   "kg",

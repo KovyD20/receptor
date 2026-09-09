@@ -2,9 +2,21 @@ import { SYSTEM_UNITS, UNIT_ALIASES } from "../constants/units";
 
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
+export function unitLookupKey(value) {
+  const raw = (value || "").toString().trim().toLocaleLowerCase("hu-HU");
+  const ascii = raw.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  return ascii.replace(/\./g, "").replace(/[\s-]+/g, "").trim();
+}
+
+const UNIT_LOOKUP = Object.fromEntries(
+  Object.entries(UNIT_ALIASES).map(([alias, unit]) => [unitLookupKey(alias), unit]),
+);
+
 const UNIT_TOKENS = Array.from(
-  new Set([...SYSTEM_UNITS, ...Object.keys(UNIT_ALIASES)]),
-).sort((a, b) => b.length - a.length);
+  new Set([...SYSTEM_UNITS, ...Object.keys(UNIT_ALIASES)].map(unitLookupKey)),
+)
+  .filter(Boolean)
+  .sort((a, b) => b.length - a.length);
 
 const UNIT_TOKEN_PATTERN = UNIT_TOKENS.map(escapeRegex).join("|");
 
@@ -24,25 +36,25 @@ export function stripAmountsAndUnits(value) {
 }
 
 export function normalizeUnit(value) {
-  const raw = (value || "").toString().trim().toLocaleLowerCase("hu-HU");
-  if (!raw) return "";
-  const ascii = raw.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  const cleaned = ascii.replace(/\./g, "").replace(/[\s-]+/g, "").trim();
-  return UNIT_ALIASES[cleaned] || cleaned;
+  const key = unitLookupKey(value);
+  if (!key) return "";
+  return UNIT_LOOKUP[key] || key;
 }
+
+const UNIT_INFO = {
+  g: { kind: "mass", factor: 1 },
+  dkg: { kind: "mass", factor: 10 },
+  kg: { kind: "mass", factor: 1000 },
+  ml: { kind: "volume", factor: 1 },
+  dl: { kind: "volume", factor: 100 },
+  l: { kind: "volume", factor: 1000 },
+  db: { kind: "count", factor: 1 },
+  szem: { kind: "count", factor: 1 },
+};
 
 export function unitInfo(unit) {
   const u = normalizeUnit(unit);
-  const table = {
-    g: { kind: "mass", factor: 1 },
-    dkg: { kind: "mass", factor: 10 },
-    kg: { kind: "mass", factor: 1000 },
-    ml: { kind: "volume", factor: 1 },
-    dl: { kind: "volume", factor: 100 },
-    l: { kind: "volume", factor: 1000 },
-    db: { kind: "count", factor: 1 },
-  };
-  return { unit: u, ...table[u] };
+  return { unit: u, ...UNIT_INFO[u] };
 }
 
 export function areUnitsCompatible(a, b) {

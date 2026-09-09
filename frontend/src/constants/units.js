@@ -1,5 +1,6 @@
 export const SYSTEM_UNITS = [
   "db",
+  "szem",
   "g",
   "dkg",
   "kg",
@@ -24,6 +25,7 @@ export const SYSTEM_UNITS = [
 export const UNIT_ALIASES = {
   db: "db",
   darab: "db",
+  szem: "szem",
   g: "g",
   gramm: "g",
   gram: "g",
@@ -32,6 +34,7 @@ export const UNIT_ALIASES = {
   ml: "ml",
   dl: "dl",
   l: "l",
+  liter: "l",
   tk: "tk",
   teáskanál: "tk",
   kiskanál: "tk",
