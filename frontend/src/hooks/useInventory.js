@@ -20,6 +20,7 @@ import {
   unitInfo,
 } from "../lib/units";
 import { upsertInventoryItem, upsertPurchaseItem } from "../lib/inventory";
+import { isIgnoredIngredient, strippedModifiers } from "../lib/ingredientText";
 
 const BATCH_LIMIT = 500;
 
@@ -104,6 +105,7 @@ export function useInventory(uid) {
     for (const ing of ingredients) {
       const rawName = (ing?.name || "").toString().trim();
       if (!rawName) continue;
+      if (isIgnoredIngredient(rawName)) continue;
       const amount = Number(ing?.amount || 0);
       if (!amount || amount <= 0) continue;
 
@@ -117,8 +119,14 @@ export function useInventory(uid) {
         kind === "mass" || kind === "volume" ? kind : unit;
       const key = hasPackage ? nameKey : `${nameKey}|${bucket}`;
 
-      const group = groups.get(key) || { name: rawName, purchase, asks: [] };
+      const group = groups.get(key) || {
+        name: rawName,
+        purchase,
+        asks: [],
+        notes: [],
+      };
       group.asks.push({ amount, unit });
+      group.notes.push(...strippedModifiers(rawName));
       groups.set(key, group);
     }
 
@@ -131,6 +139,7 @@ export function useInventory(uid) {
         asks: group.asks,
         purchase: group.purchase,
         nameKeyOf: normalizeName,
+        notes: group.notes,
       });
     }
   };

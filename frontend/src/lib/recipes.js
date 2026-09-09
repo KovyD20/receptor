@@ -1,4 +1,4 @@
-import { normalizeCatalogText } from "../constants/pantryCatalog";
+import { normalizeCatalogText } from "../constants/catalogText";
 import { MAIN_TAG_NAMES, mainTagOf } from "../constants/recipeTags";
 
 const asNumber = (value) => {

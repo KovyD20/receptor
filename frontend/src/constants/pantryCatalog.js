@@ -1,18 +1,8 @@
+import { normalizeCatalogText } from "./catalogText";
+import { ingredientNameCandidates } from "../lib/ingredientText";
+
 const UNKNOWN_CATEGORY = "Egyéb";
 
-
-export function normalizeCatalogText(value) {
-  const base = (value || "").toString().trim().toLocaleLowerCase("hu-HU");
-  if (!base) return "";
-
-  const ascii = base.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  return ascii
-    .replace(/[()]/g, " ")
-    .replace(/[\\/]/g, " ")
-    .replace(/[-_,.;:!+]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
 
 
 function normalizePurchase(purchase) {
@@ -64,23 +54,89 @@ export function createCatalog(catalogData) {
 
   const CATALOG_ITEMS = Array.from(catalogByKey.values()).sort(compareEntries);
 
+  const TOKENIZED_KEYS = [
+    ...Array.from(catalogByKey.values(), (entry) => [entry.key, entry]),
+    ...Array.from(aliasToEntry, ([key, entry]) => [key, entry]),
+  ].map(([key, entry]) => ({ tokens: key.split(" ").filter(Boolean), entry }));
+
+  function bySubsetOfTokens(tokens) {
+    const wanted = new Set(tokens);
+    let best = null;
+    let bestExtra = Infinity;
+    let ambiguous = false;
+
+    for (const { tokens: candidate, entry } of TOKENIZED_KEYS) {
+      if (candidate.length <= tokens.length) continue;
+      if (!tokens.every((token) => candidate.includes(token))) continue;
+
+      const extra = candidate.filter((token) => !wanted.has(token)).length;
+      if (extra < bestExtra) {
+        best = entry;
+        bestExtra = extra;
+        ambiguous = false;
+      } else if (extra === bestExtra && entry.key !== best?.key) {
+        ambiguous = true;
+      }
+    }
+
+    return ambiguous ? null : best;
+  }
+
+  function byTokenPrefix(tokens) {
+    let best = null;
+    for (const { tokens: candidate, entry } of TOKENIZED_KEYS) {
+      if (!candidate.length || candidate.length >= tokens.length) continue;
+      if (best && candidate.length <= best.tokens.length) continue;
+      if (candidate.every((token, i) => token === tokens[i])) {
+        best = { tokens: candidate, entry };
+      }
+    }
+    return best?.entry || null;
+  }
+
+  const resolved = new Map();
+
+  function resolveEntry(name) {
+    if (resolved.has(name)) return resolved.get(name);
+    const hit = resolveEntryUncached(name);
+    resolved.set(name, hit);
+    return hit;
+  }
+
+  function resolveEntryUncached(name) {
+    const candidates = ingredientNameCandidates(name);
+
+    for (const candidate of candidates) {
+      const key = normalizeCatalogText(candidate);
+      if (!key) continue;
+      const hit = aliasToEntry.get(key) || catalogByKey.get(key);
+      if (hit) return hit;
+    }
+
+    for (const candidate of candidates) {
+      const tokens = normalizeCatalogText(candidate).split(" ").filter(Boolean);
+      if (!tokens.length) continue;
+      const hit = bySubsetOfTokens(tokens) || byTokenPrefix(tokens);
+      if (hit) return hit;
+    }
+
+    return null;
+  }
+
   function resolveCatalogKey(name) {
     const key = normalizeCatalogText(name);
     if (!key) return "";
-    return aliasToEntry.get(key)?.key || key;
+    return resolveEntry(name)?.key || key;
   }
 
   function resolveCanonicalCatalogName(name) {
-    const key = normalizeCatalogText(name);
-    if (!key) return "";
-    const match = aliasToEntry.get(key) || catalogByKey.get(key);
-    return match ? match.name : (name || "").toString().trim();
+    if (!normalizeCatalogText(name)) return "";
+    return resolveEntry(name)?.name || (name || "").toString().trim();
   }
 
   function getCatalogItemByName(name) {
-    const key = resolveCatalogKey(name);
-    if (!key) return null;
-    return catalogByKey.get(key) || null;
+    if (!normalizeCatalogText(name)) return null;
+    return resolveEntry(name);
   }
 
   function groupItemsByCatalog(items) {

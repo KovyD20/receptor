@@ -8,6 +8,7 @@ import {
 } from "./GroupedItems";
 import { useCollapsedGroups } from "../../hooks/useCollapsedGroups";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
+import { shoppingRowNote } from "../../lib/inventory";
 
 const ACCENT = "var(--yellow)";
 const REC_KEY = "rec";
@@ -287,15 +288,7 @@ export default function ShoppingView({
                       onSetItemAmount &&
                       ((unit) => onSetItemAmount(item, { unit }))
                     }
-                    note={
-                      item.sourceAmount &&
-                      !(
-                        item.sourceAmount === item.amount &&
-                        (item.sourceUnit || "") === (item.unit || "")
-                      )
-                        ? `recept: ${item.sourceAmount} ${item.sourceUnit || ""}`.trim()
-                        : null
-                    }
+                    note={shoppingRowNote(item)}
                     done={item.done}
                     onToggleDone={() => onToggleDone(item)}
                     onIncrement={() => onUpdateItem(item, 1)}

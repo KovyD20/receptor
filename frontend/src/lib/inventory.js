@@ -62,6 +62,34 @@ export async function upsertInventoryItem({
   return { status: "created", id: ref.id };
 }
 
+function mergeNotes(existing, incoming) {
+  const seen = new Set();
+  const merged = [];
+  for (const note of [...(existing || []), ...(incoming || [])]) {
+    const word = (note || "").toString().trim();
+    const key = word.toLocaleLowerCase("hu-HU");
+    if (!word || seen.has(key)) continue;
+    seen.add(key);
+    merged.push(word);
+  }
+  return merged;
+}
+
+export function shoppingRowNote(item) {
+  const parts = [...(item?.notes || [])];
+
+  const source = Number(item?.sourceAmount);
+  const explainsTheAmount =
+    Number.isFinite(source) &&
+    source > 0 &&
+    !(source === Number(item?.amount) && (item?.sourceUnit || "") === (item?.unit || ""));
+  if (explainsTheAmount) {
+    parts.push(`recept: ${source} ${item.sourceUnit || ""}`.trim());
+  }
+
+  return parts.length ? parts.join(" · ") : null;
+}
+
 export async function upsertPurchaseItem({
   db,
   uid,
@@ -70,6 +98,7 @@ export async function upsertPurchaseItem({
   asks,
   purchase,
   nameKeyOf,
+  notes = [],
 }) {
   const nameKey = nameKeyOf(canonicalName);
   const hasPackage = Boolean(purchase?.unit) && Number(purchase?.amount) > 0;
@@ -96,6 +125,8 @@ export async function upsertPurchaseItem({
   const buy = accumulatePurchase(asks, purchase, previous);
   if (!Number.isFinite(buy.amount) || buy.amount <= 0) return { status: "skipped" };
 
+  const nextNotes = mergeNotes(existing?.notes, notes);
+
   const sourceFields = buy.source
     ? {
         sourceAmount: buy.source.amount,
@@ -121,6 +152,9 @@ export async function upsertPurchaseItem({
       amount: nextAmount,
       name: canonicalName,
       ...(tracked ? { unit: buy.unit, ...sourceFields } : {}),
+      ...(nextNotes.length === (existing.notes?.length || 0)
+        ? {}
+        : { notes: nextNotes }),
     });
     return { status: "merged", id: existing.id };
   }
@@ -136,6 +170,7 @@ export async function upsertPurchaseItem({
           ...(buy.source.loose ? { sourceLoose: true } : {}),
         }
       : {}),
+    ...(nextNotes.length ? { notes: nextNotes } : {}),
   });
   return { status: "created", id: ref.id };
 }
