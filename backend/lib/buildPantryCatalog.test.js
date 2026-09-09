@@ -165,7 +165,18 @@ describe("the real seed data", () => {
   });
 
   it("has package data that names a real unit", () => {
-    const units = new Set(["db", "szem", "g", "dkg", "kg", "ml", "dl", "l", "csomag"]);
+    const units = new Set([
+      "db",
+      "szem",
+      "g",
+      "dkg",
+      "kg",
+      "ml",
+      "dl",
+      "l",
+      "csomag",
+      "csokor",
+    ]);
     const bad = Array.from(catalog.catalogByKey.values())
       .filter((entry) => entry.purchase && !units.has(entry.purchase.unit))
       .map((entry) => `${entry.name}: ${entry.purchase.unit}`);
@@ -260,6 +271,141 @@ describe("the real seed data", () => {
     expect(resolve("zeller").name).toBe("zeller");
     expect(resolve("petrezselyemgyökér").name).toBe("fehérrépa");
     expect(resolve("petrezselyem").name).toBe("petrezselyem (zöldség)");
+  });
+
+  it("gives a package size to everything recipes measure in spoons", () => {
+    const missing = [
+      "kakaópor",
+      "sütőpor",
+      "szódabikarbóna",
+      "élesztő",
+      "keményítő",
+      "kardamom",
+      "citromlé",
+      "vaníliaaroma",
+      "szárított tárkony",
+      "lestyán",
+      "levesgyöngy",
+      "paradicsompüré",
+      "sertészsír",
+      "chiamag",
+      "juharszirup",
+      "zabpehely",
+      "mogyoróvaj",
+      "olívabogyó",
+      "cukor",
+      "porcukor",
+      "fekete bors",
+      "fahéj",
+      "pirospaprika",
+    ].filter((name) => !resolve(name)?.purchase);
+    expect(missing).toEqual([]);
+  });
+
+  it("keeps ground coffee and 3in1 as products of their own", () => {
+    expect(resolve("őrölt kávé")).toMatchObject({
+      name: "őrölt kávé",
+      category: "Üdítők, italok",
+    });
+    expect(resolve("presszó kávé").name).toBe("őrölt kávé");
+    expect(resolve("presszókávé").name).toBe("őrölt kávé");
+    expect(resolve("3in1 kávé").name).toBe("3in1 kávé");
+    expect(resolve("3 in 1 kávé").name).toBe("3in1 kávé");
+    expect(resolve("3-in-1 kávé").name).toBe("3in1 kávé");
+    expect(resolve("kávé").name).toBe("kávé");
+  });
+
+  it("keeps dark chocolate apart from plain chocolate", () => {
+    expect(resolve("étcsokoládé").name).toBe("étcsokoládé");
+    expect(resolve("csokoládé").name).toBe("csokoládé");
+  });
+
+  it("treats kristálycukor as the plain sugar it is", () => {
+    expect(resolve("kristálycukor").name).toBe("cukor");
+  });
+
+  it("leaves the state-modifier spellings to the input cleaner", () => {
+    expect(resolve("őrölt kardamom")).toBeNull();
+    expect(resolve("kardamom").name).toBe("kardamom");
+    expect(resolve("őrölt fahéj")).toBeNull();
+    expect(resolve("fahéj").name).toBe("fahéj");
+  });
+
+  describe("the 41 observed unresolved rows", () => {
+    const RESOLVES = {
+      akácméz: "méz",
+      alaplé: "alaplé",
+      balzsamecet: "balzsamecet",
+      "barna cukor": "barna cukor",
+      "cayenne bors": "cayenne bors",
+      "cukrozatlan kakaópor": "cukrozatlan kakaópor",
+      "darált sertéshús": "darált sertés",
+      "dijoni mustár": "dijoni mustár",
+      finomliszt: "liszt",
+      "görög joghurt": "görög joghurt",
+      "hegyes-erős paprika": "chili paprika",
+      "jalapeno paprika": "jalapeno paprika",
+      Kapor: "kapor",
+      koriander: "koriander",
+      kukoricakeményítő: "keményítő",
+      marhalábszár: "marhahús",
+      "nagy marha velőscsont": "velőscsont",
+      passata: "paradicsompüré",
+      "piros chilipaprika": "chili paprika",
+      pulykamellfilé: "pulykamell",
+      rókagomba: "rókagomba",
+      "sertés rövidkaraj": "sertéskaraj",
+      "szárított kakukkfű": "kakukkfű",
+      "szárított petrezselyem": "szárított petrezselyem",
+      szárzeller: "zellerszár",
+      "teljeskiőrlésű liszt": "teljeskiőrlésű liszt",
+      Tök: "tök",
+      vörösborecet: "vörösborecet",
+      zellerzöld: "zöldségzöld",
+    };
+
+    const WAITS_FOR_THE_INPUT_CLEANER = [
+      "őrölt fahéj",
+      "őrölt fekete bors",
+      "őrölt kardamom",
+      "őrölt kömény",
+      "Szárított oregánó",
+      "morzsolt oregánó",
+      "Száraz fehérbor",
+      "Száraz vörösbor",
+      "Reszelt parmezán sajt",
+      "friss vajas élesztős leveles tészta",
+      "Víz",
+      "víz",
+    ];
+
+    it("resolves 29 of them, each to the item named here", () => {
+      const wrong = Object.entries(RESOLVES)
+        .map(([input, expected]) => [input, expected, resolve(input)?.name])
+        .filter(([, expected, actual]) => actual !== expected)
+        .map(([input, expected, actual]) => `${input}: ${actual} != ${expected}`);
+      expect(wrong).toEqual([]);
+      expect(Object.keys(RESOLVES)).toHaveLength(29);
+    });
+
+    it("gives every one of them a package size, so no ask splits the row", () => {
+      const missing = Object.keys(RESOLVES).filter(
+        (input) => !resolve(input)?.purchase,
+      );
+      expect(missing).toEqual([]);
+    });
+
+    it("leaves the state-modifier spellings for the input cleaner", () => {
+      const leaked = WAITS_FOR_THE_INPUT_CLEANER.filter((input) => resolve(input));
+      expect(leaked).toEqual([]);
+      expect(WAITS_FOR_THE_INPUT_CLEANER).toHaveLength(12);
+    });
+
+    it("accounts for all 41 rows", () => {
+      expect(
+        Object.keys(RESOLVES).length + WAITS_FOR_THE_INPUT_CLEANER.length,
+      ).toBe(41);
+    });
   });
 
   it("does not add water to the catalog", () => {

@@ -278,6 +278,50 @@ describe("useInventory shop-package rounding", () => {
     );
   });
 
+  it("merges unaddable units into one row once the item has a package", async () => {
+    purchaseByName.set("kakaópor", { unit: "g", amount: 100 });
+    const { result } = mountLoaded();
+
+    await act(async () => {
+      await result.current.addToShoppingList([
+        { name: "kakaópor", amount: 20, unit: "g" },
+        { name: "kakaópor", amount: 4, unit: "ek" },
+      ]);
+    });
+
+    expect(firestoreMock.addDoc).toHaveBeenCalledTimes(1);
+    expect(firestoreMock.addDoc).toHaveBeenCalledWith(
+      { path: shopPath("u1") },
+      {
+        name: "kakaópor",
+        amount: 100,
+        unit: "g",
+        sourceAmount: 20,
+        sourceUnit: "g",
+        sourceLoose: true,
+      },
+    );
+  });
+
+  it("puts a package-unit ask and a spoon ask of one item on a single row", async () => {
+    purchaseByName.set("sütőpor", { unit: "csomag", amount: 1 });
+    const { result } = mountLoaded();
+
+    await act(async () => {
+      await result.current.addToShoppingList([
+        { name: "sütőpor", amount: 10, unit: "g" },
+        { name: "sütőpor", amount: 1, unit: "tk" },
+      ]);
+    });
+
+    expect(firestoreMock.addDoc).toHaveBeenCalledTimes(1);
+    expect(firestoreMock.addDoc.mock.calls[0][1]).toMatchObject({
+      name: "sütőpor",
+      amount: 1,
+      unit: "csomag",
+    });
+  });
+
   it("still merges compatible units on an item with no package data", async () => {
     const { result } = mountLoaded();
 
