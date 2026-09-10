@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import {
+  PRIORITY_RANK,
   buildPantryCatalog,
   collectAliases,
   normalizeCategory,
@@ -268,9 +269,10 @@ describe("the real seed data", () => {
   it("keeps the celery and parsley products apart", () => {
     expect(resolve("zellerszár").name).toBe("zellerszár");
     expect(resolve("zellergumó").name).toBe("zellergumó");
-    expect(resolve("zeller").name).toBe("zeller");
+    expect(resolve("zeller").name).toBe("zellergumó");
     expect(resolve("petrezselyemgyökér").name).toBe("fehérrépa");
-    expect(resolve("petrezselyem").name).toBe("petrezselyem (zöldség)");
+    expect(resolve("petrezselyem").category).toBe("Fűszerek, ízesítők");
+    expect(resolve("friss petrezselyem").name).toBe("petrezselyem (zöldség)");
   });
 
   it("gives a package size to everything recipes measure in spoons", () => {
@@ -356,7 +358,7 @@ describe("the real seed data", () => {
       rókagomba: "rókagomba",
       "sertés rövidkaraj": "sertéskaraj",
       "szárított kakukkfű": "kakukkfű",
-      "szárított petrezselyem": "szárított petrezselyem",
+      "szárított petrezselyem": "petrezselyem",
       szárzeller: "zellerszár",
       "teljeskiőrlésű liszt": "teljeskiőrlésű liszt",
       Tök: "tök",
@@ -405,6 +407,41 @@ describe("the real seed data", () => {
       expect(
         Object.keys(RESOLVES).length + WAITS_FOR_THE_INPUT_CLEANER.length,
       ).toBe(41);
+    });
+  });
+
+  describe("herbs that are both a vegetable and a spice", () => {
+    const HERBS = ["petrezselyem", "kapor", "koriander", "bazsalikom"];
+
+    it("gives the bare name to the dried spice", () => {
+      const wrong = HERBS.map((herb) => [herb, resolve(herb)])
+        .filter(([, hit]) => hit?.category !== "Fűszerek, ízesítők")
+        .map(([herb, hit]) => `${herb}: ${hit?.name} (${hit?.category})`);
+      expect(wrong).toEqual([]);
+    });
+
+    it("sells that spice by the sachet", () => {
+      const wrong = HERBS.filter(
+        (herb) => resolve(herb)?.purchase?.unit !== "csomag",
+      );
+      expect(wrong).toEqual([]);
+    });
+
+    it("keeps the fresh form reachable under a 'friss' alias", () => {
+      const wrong = HERBS.map((herb) => [herb, resolve(`friss ${herb}`)])
+        .filter(([, hit]) => hit?.category !== "Zöldségek")
+        .map(([herb, hit]) => `friss ${herb}: ${hit?.name} (${hit?.category})`);
+      expect(wrong).toEqual([]);
+    });
+
+    it("outranks the vegetable row, which is what breaks the tie", () => {
+      const rows = new Map(RAW_CATALOG_ROWS.map((row) => [row.name, row]));
+      const wrong = HERBS.filter(
+        (herb) =>
+          PRIORITY_RANK[rows.get(herb)?.priority] <=
+          PRIORITY_RANK[rows.get(`${herb} (zöldség)`)?.priority],
+      );
+      expect(wrong).toEqual([]);
     });
   });
 

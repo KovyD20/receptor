@@ -41,6 +41,8 @@ function catalogFromSeed() {
 
 const catalog = createCatalog(catalogFromSeed());
 const nameOf = (input) => catalog.getCatalogItemByName(input)?.name || null;
+const categoryOf = (input) =>
+  catalog.getCatalogItemByName(input)?.category || null;
 
 describe("the ladder on the real catalog", () => {
   it("resolves the 12 rows the data fixes could not reach", () => {
@@ -69,9 +71,9 @@ describe("the ladder on the real catalog", () => {
     expect(nameOf("darált hús")).toBe("darált hús");
     expect(nameOf("darált sertés")).toBe("darált sertés");
     expect(nameOf("szárított tárkony")).toBe("szárított tárkony");
-    expect(nameOf("szárított petrezselyem")).toBe("szárított petrezselyem");
     expect(nameOf("fagyasztott spenót")).toBe("fagyasztott spenót");
-    expect(nameOf("friss koriander")).toBe("koriander");
+    expect(categoryOf("szárított petrezselyem")).toBe("Fűszerek, ízesítők");
+    expect(nameOf("friss koriander")).toBe("koriander (zöldség)");
   });
 
   it("refuses to turn a product qualifier into another product", () => {

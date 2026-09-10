@@ -305,7 +305,13 @@ export default function ShoppingView({
             essential={recommendations.essential}
             goodToHave={recommendations.goodToHave}
             extra={recommendations.extra}
-            onAdd={(item) => onAddItem({ name: item.name, amount: 1, unit: "db" })}
+            onAdd={(item) =>
+              onAddItem({
+                name: item.name,
+                amount: item.purchase?.amount || 1,
+                unit: item.purchase?.unit || "db",
+              })
+            }
             isOpen={isOpen}
             toggle={toggle}
           />
