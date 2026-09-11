@@ -74,8 +74,33 @@ export function convertAmount(amount, fromInfo, toInfo) {
 const MAX_PURCHASE_PACKAGES = 20;
 const PACKAGE_EPSILON = 1e-9;
 
-function trimFloat(value) {
+export function trimFloat(value) {
   return Math.round(value * 1000) / 1000;
+}
+
+const WHOLE_ONLY_UNITS = new Set(
+  [
+    "db",
+    "szem",
+    "csomag",
+    "konzerv",
+    "fej",
+    "szál",
+    "csokor",
+    "gerezd",
+    "szelet",
+    "csipet",
+    "bögre",
+    "pohár",
+    "marék",
+  ].map(unitLookupKey),
+);
+
+export function roundToBuyableAmount(amount, unit) {
+  const value = Number(amount);
+  if (!Number.isFinite(value) || value <= 0) return value;
+  if (!WHOLE_ONLY_UNITS.has(unitLookupKey(normalizeUnit(unit)))) return value;
+  return Math.ceil(trimFloat(value));
 }
 
 export function accumulatePurchase(asks, purchase, previous = null) {

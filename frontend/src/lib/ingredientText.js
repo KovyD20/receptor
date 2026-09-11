@@ -50,10 +50,14 @@ function withoutStateWords(value) {
   return kept.length ? kept.join(" ") : (value || "").toString().trim();
 }
 
-export function strippedModifiers(name) {
-  return words(withoutPurposeSuffix(name)).filter((word) =>
-    STATE_WORD_KEYS.has(normalizeCatalogText(word)),
-  );
+export function strippedModifiers(name, canonicalName = "") {
+  const alreadySaid = new Set(words(canonicalName).map(normalizeCatalogText));
+  return words(withoutPurposeSuffix(name))
+    .filter((word) => {
+      const key = normalizeCatalogText(word);
+      return STATE_WORD_KEYS.has(key) && !alreadySaid.has(key);
+    })
+    .map((word) => word.toLocaleLowerCase("hu-HU"));
 }
 
 export function ingredientNameCandidates(name) {

@@ -10,6 +10,7 @@ import {
   unitInfo,
   areUnitsCompatible,
   convertAmount,
+  trimFloat,
 } from "./units";
 
 export async function upsertInventoryItem({
@@ -38,7 +39,7 @@ export async function upsertInventoryItem({
       incomingUnitInfo,
       unitInfo(existing.unit),
     );
-    const nextAmount = Number(existing.amount || 0) + converted;
+    const nextAmount = trimFloat(Number(existing.amount || 0) + converted);
     if (nextAmount <= 0) return { status: "skipped" };
     await updateDoc(doc(db, "users", uid, collectionName, existing.id), {
       amount: nextAmount,
@@ -142,10 +143,12 @@ export async function upsertPurchaseItem({
       };
 
   if (existing) {
-    const nextAmount = tracked
-      ? buy.amount
-      : Number(existing.amount || 0) +
-        convertAmount(buy.amount, unitInfo(buy.unit), unitInfo(existing.unit));
+    const nextAmount = trimFloat(
+      tracked
+        ? buy.amount
+        : Number(existing.amount || 0) +
+            convertAmount(buy.amount, unitInfo(buy.unit), unitInfo(existing.unit)),
+    );
     if (nextAmount <= 0) return { status: "skipped" };
 
     await updateDoc(doc(db, "users", uid, "shoppingList", existing.id), {

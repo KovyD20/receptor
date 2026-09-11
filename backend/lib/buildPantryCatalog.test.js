@@ -251,7 +251,7 @@ describe("the real seed data", () => {
       "szárított tárkony",
       "tyúk",
       "vaníliaaroma",
-      "zöldségzöld",
+      "leveszöldségcsomag",
       "fehérrépa",
       "Manchego sajt",
       "főzőtejszín",
@@ -273,6 +273,30 @@ describe("the real seed data", () => {
     expect(resolve("petrezselyemgyökér").name).toBe("fehérrépa");
     expect(resolve("petrezselyem").category).toBe("Fűszerek, ízesítők");
     expect(resolve("friss petrezselyem").name).toBe("petrezselyem (zöldség)");
+    expect(resolve("zöldségzöld").name).toBe("petrezselyem (zöldség)");
+    expect(resolve("leveszöldség").name).toBe("leveszöldségcsomag");
+  });
+
+  it("sells the two salads as two products", () => {
+    expect(resolve("fejes saláta").name).toBe("fejes saláta");
+    expect(resolve("jégsaláta").name).toBe("jégsaláta");
+    expect(resolve("saláta").name).toBe("fejes saláta");
+    expect(resolve("madársaláta").name).toBe("madársaláta");
+  });
+
+  it("sells butter and margarine as two products", () => {
+    expect(resolve("vaj").name).toBe("vaj");
+    expect(resolve("margarin").name).toBe("margarin");
+    expect(resolve("vaj").purchase).toEqual({ unit: "g", amount: 250 });
+    expect(resolve("margarin").purchase).toEqual({ unit: "g", amount: 500 });
+    expect(resolve("mogyoróvaj").name).toBe("mogyoróvaj");
+  });
+
+  it("gives every row a package size", () => {
+    const missing = Array.from(catalog.catalogByKey.values())
+      .filter((entry) => !entry.purchase)
+      .map((entry) => entry.name);
+    expect(missing).toEqual([]);
   });
 
   it("gives a package size to everything recipes measure in spoons", () => {
@@ -363,7 +387,7 @@ describe("the real seed data", () => {
       "teljeskiőrlésű liszt": "teljeskiőrlésű liszt",
       Tök: "tök",
       vörösborecet: "vörösborecet",
-      zellerzöld: "zöldségzöld",
+      zellerzöld: "petrezselyem (zöldség)",
     };
 
     const WAITS_FOR_THE_INPUT_CLEANER = [

@@ -86,6 +86,17 @@ describe("the ladder on the real catalog", () => {
     expect(nameOf("füstölt tofu")).toBeNull();
   });
 
+  it("keeps the split products apart", () => {
+    expect(nameOf("mogyoróvaj")).toBe("mogyoróvaj");
+    expect(nameOf("vaj")).toBe("vaj");
+    expect(nameOf("margarin")).toBe("margarin");
+    expect(nameOf("saláta")).toBe("fejes saláta");
+    expect(nameOf("jégsaláta")).toBe("jégsaláta");
+    expect(nameOf("madársaláta")).toBe("madársaláta");
+    expect(nameOf("leveszöldség")).toBe("leveszöldségcsomag");
+    expect(nameOf("zöldségzöld")).toBe("petrezselyem (zöldség)");
+  });
+
   it("resolves a name that is less specific than the item (level 3)", () => {
     expect(nameOf("csicseriborsó")).toBe("konzerv csicseriborsó");
     expect(nameOf("bab")).toBe("konzerv bab");
