@@ -54,16 +54,51 @@ function readPurchase(row) {
   return { unit, amount };
 }
 
-function buildPantryCatalog(rows, manualSynonyms = {}, warn = console.warn) {
-  const categoryOrder = [];
+function orderCategories(seen, declared, warn) {
+  if (!declared) return seen;
+
+  const rank = new Map(declared.map((name, index) => [normalizeCategory(name), index]));
+  const LAST = Number.MAX_SAFE_INTEGER;
+
+  const unlisted = seen.filter((name) => !rank.has(name));
+  if (unlisted.length) {
+    warn(
+      `buildPantryCatalog: ${unlisted
+        .map((name) => `"${name}"`)
+        .join(", ")} missing from CATEGORY_ORDER — put at the end.`,
+    );
+  }
+
+  const unused = [...rank.keys()].filter((name) => !seen.includes(name));
+  if (unused.length) {
+    warn(
+      `buildPantryCatalog: CATEGORY_ORDER lists ${unused
+        .map((name) => `"${name}"`)
+        .join(", ")}, which no row uses.`,
+    );
+  }
+
+  return [...seen].sort(
+    (a, b) =>
+      (rank.get(a) ?? LAST) - (rank.get(b) ?? LAST) ||
+      seen.indexOf(a) - seen.indexOf(b),
+  );
+}
+
+function buildPantryCatalog(
+  rows,
+  manualSynonyms = {},
+  { warn = console.warn, categoryOrder = null } = {},
+) {
+  const seenOrder = [];
   const categoryIndex = new Map();
   const catalogByKey = new Map();
   const aliasToEntry = new Map();
 
   function ensureCategory(category) {
     if (categoryIndex.has(category)) return;
-    categoryIndex.set(category, categoryOrder.length);
-    categoryOrder.push(category);
+    categoryIndex.set(category, seenOrder.length);
+    seenOrder.push(category);
   }
 
   for (const row of rows) {
@@ -133,12 +168,17 @@ function buildPantryCatalog(rows, manualSynonyms = {}, warn = console.warn) {
     registerAlias(alias, targetEntry);
   }
 
-  return { categoryOrder, catalogByKey, aliasToEntry };
+  return {
+    categoryOrder: orderCategories(seenOrder, categoryOrder, warn),
+    catalogByKey,
+    aliasToEntry,
+  };
 }
 
 module.exports = {
   PRIORITY_RANK,
   buildPantryCatalog,
+  orderCategories,
   collectAliases,
   normalizeCategory,
   readPurchase,

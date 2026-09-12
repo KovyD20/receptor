@@ -246,6 +246,7 @@
 .grid-4 {
   grid-template-columns: repeat(4, 1fr);
 }
+
 .grid-3 {
   grid-template-columns: repeat(3, 1fr);
 }
@@ -794,6 +795,9 @@
 .group-body {
   display: flex;
   flex-direction: column;
+  max-height: min(420px, 50vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .item-row {
@@ -1476,6 +1480,10 @@
   .grid-3 {
     grid-template-columns: 1fr;
     gap: 12px;
+  }
+  .group-body {
+    max-height: none;
+    overflow-y: visible;
   }
 
   .view-head {

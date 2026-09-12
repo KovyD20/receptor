@@ -7,7 +7,11 @@ import {
   readPurchase,
 } from "./buildPantryCatalog.js";
 import { normalizeCatalogText } from "./normalize.js";
-import { RAW_CATALOG_ROWS, MANUAL_SYNONYMS } from "../scripts/pantrySeedData.js";
+import {
+  RAW_CATALOG_ROWS,
+  MANUAL_SYNONYMS,
+  CATEGORY_ORDER,
+} from "../scripts/pantrySeedData.js";
 
 describe("normalizeCategory", () => {
   it("drops the leading list number the seed data still carries", () => {
@@ -83,6 +87,73 @@ describe("buildPantryCatalog", () => {
     expect(categoryOrder).toEqual(["Zöldségek", "Snackek"]);
   });
 
+  it("follows a declared CATEGORY_ORDER instead of the row order", () => {
+    const { categoryOrder } = buildPantryCatalog(
+      [
+        { category: "Szárazáru", name: "rizs" },
+        { category: "Zöldségek", name: "só" },
+        { category: "Pékáruk", name: "zsemle" },
+      ],
+      {},
+      { categoryOrder: ["Zöldségek", "Pékáruk", "Szárazáru"] },
+    );
+    expect(categoryOrder).toEqual(["Zöldségek", "Pékáruk", "Szárazáru"]);
+  });
+
+  it("strips the list number on both sides before matching", () => {
+    const { categoryOrder } = buildPantryCatalog(
+      [
+        { category: "9. Snackek", name: "keksz" },
+        { category: "Zöldségek", name: "só" },
+      ],
+      {},
+      { categoryOrder: ["9. Snackek", "Zöldségek"] },
+    );
+    expect(categoryOrder).toEqual(["Snackek", "Zöldségek"]);
+  });
+
+  it("warns about a category the order forgot, and puts it last", () => {
+    const warn = vi.fn();
+    const { categoryOrder } = buildPantryCatalog(
+      [
+        { category: "Pékáruk", name: "zsemle" },
+        { category: "Halak", name: "lazac" },
+        { category: "Zöldségek", name: "só" },
+      ],
+      {},
+      { categoryOrder: ["Zöldségek", "Pékáruk"], warn },
+    );
+
+    expect(categoryOrder).toEqual(["Zöldségek", "Pékáruk", "Halak"]);
+    expect(warn).toHaveBeenCalledOnce();
+    expect(warn.mock.calls[0][0]).toContain("Halak");
+  });
+
+  it("warns about an order entry no row uses", () => {
+    const warn = vi.fn();
+    buildPantryCatalog(
+      [{ category: "Zöldségek", name: "só" }],
+      {},
+      { categoryOrder: ["Zöldségek", "Halak"], warn },
+    );
+
+    expect(warn).toHaveBeenCalledOnce();
+    expect(warn.mock.calls[0][0]).toContain("Halak");
+  });
+
+  it("keeps unlisted categories in first-seen order behind the listed ones", () => {
+    const { categoryOrder } = buildPantryCatalog(
+      [
+        { category: "Halak", name: "lazac" },
+        { category: "Zöldségek", name: "só" },
+        { category: "Borok", name: "rizling" },
+      ],
+      {},
+      { categoryOrder: ["Zöldségek"], warn: () => {} },
+    );
+    expect(categoryOrder).toEqual(["Zöldségek", "Halak", "Borok"]);
+  });
+
   it("merges duplicate names, keeping the higher stock level and the package data", () => {
     const { catalogByKey } = buildPantryCatalog([
       { category: "Szárazáru", name: "rizs", priority: "extra" },
@@ -107,7 +178,7 @@ describe("buildPantryCatalog", () => {
     buildPantryCatalog(
       [{ category: "Zöldségek", name: "burgonya" }],
       { krumpli: "burgonya", kripli: "nincs ilyen" },
-      warn,
+      { warn },
     );
 
     expect(warn).toHaveBeenCalledOnce();
@@ -124,14 +195,35 @@ describe("buildPantryCatalog", () => {
 });
 
 describe("the real seed data", () => {
-  const catalog = buildPantryCatalog(RAW_CATALOG_ROWS, MANUAL_SYNONYMS, (message) => {
-    throw new Error(message);
+  const catalog = buildPantryCatalog(RAW_CATALOG_ROWS, MANUAL_SYNONYMS, {
+    categoryOrder: CATEGORY_ORDER,
+    warn: (message) => {
+      throw new Error(message);
+    },
   });
 
   const resolve = (name) => {
     const key = normalizeCatalogText(name);
     return catalog.aliasToEntry.get(key) || catalog.catalogByKey.get(key) || null;
   };
+
+  it("walks the shop in the declared order", () => {
+    expect(catalog.categoryOrder).toEqual([
+      "Zöldségek",
+      "Gyümölcsök",
+      "Pékáruk",
+      "Húsfélék",
+      "Felvágottak",
+      "Fagyasztott termékek",
+      "Tejtermékek, tojás",
+      "Üdítők, italok",
+      "Snackek",
+      "Fűszerek, ízesítők",
+      "Szárazáru",
+      "Háztartási alapcikkek (konyha)",
+      "Háztartási alapcikkek (fürdő)",
+    ]);
+  });
 
   it("has a category, a name and a known stock level on every row", () => {
     const bad = RAW_CATALOG_ROWS.filter(

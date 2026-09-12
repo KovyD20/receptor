@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { createCatalog } from "../constants/pantryCatalog";
@@ -11,11 +12,35 @@ import { apiUrl } from "../lib/api";
 
 const CatalogContext = createContext(null);
 
+const CACHE_KEY = "smartkitchen.pantryCatalog.v1";
+
+function readCachedCatalog() {
+  try {
+    const raw = window.localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed?.categories) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedCatalog(json) {
+  try {
+    window.localStorage.setItem(CACHE_KEY, JSON.stringify(json));
+  } catch {
+    // A full or blocked store only costs the next visit its head start.
+  }
+}
+
 export function CatalogProvider({ children }) {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [cached] = useState(readCachedCatalog);
+  const [data, setData] = useState(cached);
+  const [loading, setLoading] = useState(!cached);
   const [error, setError] = useState(null);
   const [attempt, setAttempt] = useState(0);
+
+  const hasCatalog = useRef(Boolean(cached));
 
   const reload = useCallback(() => setAttempt((n) => n + 1), []);
 
@@ -23,15 +48,18 @@ export function CatalogProvider({ children }) {
     let cancelled = false;
 
     async function load() {
-      setLoading(true);
       setError(null);
+      if (!hasCatalog.current) setLoading(true);
       try {
         const res = await fetch(apiUrl("/api/pantry/catalog"));
         if (!res.ok) throw new Error(`Catalog fetch failed (${res.status})`);
         const json = await res.json();
-        if (!cancelled) setData(json);
+        writeCachedCatalog(json);
+        if (cancelled) return;
+        hasCatalog.current = true;
+        setData(json);
       } catch (err) {
-        if (!cancelled) setError(err);
+        if (!cancelled && !hasCatalog.current) setError(err);
       } finally {
         if (!cancelled) setLoading(false);
       }

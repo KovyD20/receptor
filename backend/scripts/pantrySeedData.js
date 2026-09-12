@@ -282,4 +282,20 @@ const MANUAL_SYNONYMS = {
   szotyi: "napraforgómag (szotyi)",
 };
 
-module.exports = { RAW_CATALOG_ROWS, MANUAL_SYNONYMS };
+const CATEGORY_ORDER = [
+  "Zöldségek",
+  "Gyümölcsök",
+  "Pékáruk",
+  "Húsfélék",
+  "Felvágottak",
+  "Fagyasztott termékek",
+  "Tejtermékek, tojás",
+  "Üdítők, italok",
+  "Snackek",
+  "Fűszerek, ízesítők",
+  "Szárazáru",
+  "Háztartási alapcikkek (konyha)",
+  "Háztartási alapcikkek (fürdő)",
+];
+
+module.exports = { RAW_CATALOG_ROWS, MANUAL_SYNONYMS, CATEGORY_ORDER };

@@ -209,7 +209,7 @@ export default function RecipeView({
             type="button"
             className="btn-icon-outline"
             style={{ "--accent": "var(--yellow)" }}
-            aria-label="Minden hozzávaló a listára"
+            aria-label="Teljes recept a listához"
             onClick={onAddAllToCart}
           >
             <Icon name="cartPlus" size={16} />
@@ -281,7 +281,7 @@ export default function RecipeView({
           onClick={onAddAllToCart}
         >
           <Icon name="cartPlus" size={13} />
-          Listához ad
+          Teljes recept a listához
         </button>
         <button
           type="button"
@@ -356,7 +356,7 @@ export default function RecipeView({
               onClick={() => onAddMissingToCart(missing)}
             >
               <Icon name="cartPlus" size={13} />
-              Hiányzók listára
+              Hiányzó tételek a listához
             </button>
           </footer>
         </section>
