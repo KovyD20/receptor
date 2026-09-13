@@ -20,7 +20,11 @@ import {
   stripAmountsAndUnits,
   unitInfo,
 } from "../lib/units";
-import { upsertInventoryItem, upsertPurchaseItem } from "../lib/inventory";
+import {
+  upsertInventoryItem,
+  upsertPurchaseItem,
+  USER_NOTE_MAX,
+} from "../lib/inventory";
 import { isIgnoredIngredient, strippedModifiers } from "../lib/ingredientText";
 
 const BATCH_LIMIT = 500;
@@ -222,6 +226,15 @@ export function useInventory(uid) {
   const setShoppingItemAmount = setInventoryItemAmount("shoppingList");
   const setFridgeItemAmount = setInventoryItemAmount("fridge");
 
+  const setShoppingItemNote = async (item, note) => {
+    if (!uid || !item?.id) return;
+    const next = (note ?? "").toString().trim().slice(0, USER_NOTE_MAX);
+    if (next === (item.userNote || "")) return;
+    await updateDoc(doc(db, "users", uid, "shoppingList", item.id), {
+      userNote: next || deleteField(),
+    });
+  };
+
   const toggleShoppingItemDone = (item) =>
     updateDoc(doc(db, "users", uid, "shoppingList", item.id), {
       done: !item.done,
@@ -305,6 +318,7 @@ export function useInventory(uid) {
     addSingleShoppingItem,
     updateShoppingItem,
     setShoppingItemAmount,
+    setShoppingItemNote,
     setFridgeItemAmount,
     toggleShoppingItemDone,
     deleteShoppingItem,

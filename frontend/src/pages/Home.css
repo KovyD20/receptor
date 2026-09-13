@@ -878,6 +878,30 @@
   flex: none;
 }
 
+.item-note-input {
+  display: block;
+  width: 100%;
+  max-width: 340px;
+  height: 22px;
+  margin-top: 3px;
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--text-body);
+  background: var(--card-inset-2);
+  border: 1px solid #3d3d3d;
+  border-radius: 7px;
+}
+.item-note-input::placeholder {
+  color: var(--text-mute);
+  font-weight: 400;
+}
+.item-note-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
 .item-stepper {
   display: flex;
   align-items: center;
@@ -1792,6 +1816,11 @@
   }
   .item-qty-input {
     width: 46px;
+  }
+  .item-note-input {
+    height: 30px;
+    margin-top: 5px;
+    font-size: 12px;
   }
   .item-row .icon-btn.danger,
   .item-row .item-edit {

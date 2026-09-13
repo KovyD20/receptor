@@ -76,6 +76,8 @@ function mergeNotes(existing, incoming) {
   return merged;
 }
 
+export const USER_NOTE_MAX = 120;
+
 export function shoppingRowNote(item) {
   const parts = [...(item?.notes || [])];
 
@@ -87,6 +89,9 @@ export function shoppingRowNote(item) {
   if (explainsTheAmount) {
     parts.push(`recept: ${source} ${item.sourceUnit || ""}`.trim());
   }
+
+  const own = (item?.userNote || "").toString().trim();
+  if (own) parts.push(own);
 
   return parts.length ? parts.join(" · ") : null;
 }

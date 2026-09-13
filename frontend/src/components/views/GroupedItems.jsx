@@ -163,6 +163,42 @@ function AmountField({ value, onCommit, onDone }) {
   );
 }
 
+function NoteField({ value, maxLength, onCommit, onDone }) {
+  const [draft, setDraft] = useState(null);
+
+  const commit = () => {
+    if (draft === null) return;
+    const next = draft.trim();
+    setDraft(null);
+    if (next === (value || "")) return;
+    onCommit(next);
+  };
+
+  return (
+    <input
+      className="item-note-input"
+      type="text"
+      aria-label="Saját megjegyzés"
+      placeholder="saját megjegyzés"
+      maxLength={maxLength}
+      value={draft ?? (value || "")}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          commit();
+          onDone?.();
+        } else if (e.key === "Escape") {
+          e.preventDefault();
+          setDraft(null);
+          onDone?.();
+        }
+      }}
+    />
+  );
+}
+
 export function ItemRow({
   name,
   nameKey,
@@ -175,6 +211,9 @@ export function ItemRow({
   onAmountChange,
   onUnitChange,
   note,
+  userNote,
+  onNoteChange,
+  noteMaxLength,
   done,
   onToggleDone,
   onIncrement,
@@ -188,7 +227,7 @@ export function ItemRow({
   const [editing, setEditing] = useState(false);
   const thumbSrc = showThumb ? pantryImageUrl({ nameKey, imageUrl }) : null;
 
-  const canEdit = Boolean(onAmountChange || onUnitChange);
+  const canEdit = Boolean(onAmountChange || onUnitChange || onNoteChange);
   const isEditing = canEdit && editing;
   const showControls = isEditing || !canEdit;
 
@@ -267,7 +306,16 @@ export function ItemRow({
 
       <div className="item-label">
         <span className={`item-name${done ? " is-done" : ""}`}>{name}</span>
-        {note && <span className="item-note">{note}</span>}
+        {isEditing && onNoteChange ? (
+          <NoteField
+            value={userNote}
+            maxLength={noteMaxLength}
+            onCommit={onNoteChange}
+            onDone={stopEditing}
+          />
+        ) : (
+          note && <span className="item-note">{note}</span>
+        )}
       </div>
 
       <div className="item-controls">

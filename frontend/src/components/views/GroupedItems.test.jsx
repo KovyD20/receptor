@@ -273,6 +273,97 @@ describe("ItemRow amount and unit editing", () => {
   });
 });
 
+const noteField = () => screen.queryByLabelText("Saját megjegyzés");
+
+describe("ItemRow user note", () => {
+  it("keeps the note a plain line until the row is opened", () => {
+    render(
+      <ItemRow
+        {...editable({
+          note: "reszelt · recept: 500 g · akciós",
+          userNote: "akciós",
+          onNoteChange: vi.fn(),
+        })}
+      />,
+    );
+
+    expect(screen.getByText("reszelt · recept: 500 g · akciós")).toBeTruthy();
+    expect(noteField()).toBeNull();
+
+    startEdit();
+
+    expect(screen.queryByText("reszelt · recept: 500 g · akciós")).toBeNull();
+    expect(noteField().value).toBe("akciós");
+  });
+
+  it("offers no field when the caller cannot store a note", () => {
+    render(<ItemRow {...editable({ onAmountChange: vi.fn() })} />);
+    startEdit();
+    expect(noteField()).toBeNull();
+  });
+
+  it("commits a typed note on blur and on Enter", () => {
+    const onNoteChange = vi.fn();
+    render(<ItemRow {...editable({ onNoteChange })} />);
+    startEdit();
+
+    fireEvent.change(noteField(), { target: { value: " a nagyobbat " } });
+    expect(onNoteChange).not.toHaveBeenCalled();
+
+    fireEvent.blur(noteField());
+    expect(onNoteChange).toHaveBeenCalledWith("a nagyobbat");
+
+    fireEvent.change(noteField(), { target: { value: "akciós" } });
+    fireEvent.keyDown(noteField(), { key: "Enter" });
+    expect(onNoteChange).toHaveBeenCalledWith("akciós");
+  });
+
+  it("abandons the edit on Escape", () => {
+    const onNoteChange = vi.fn();
+    render(<ItemRow {...editable({ userNote: "régi", onNoteChange })} />);
+    startEdit();
+
+    fireEvent.change(noteField(), { target: { value: "új" } });
+    fireEvent.keyDown(noteField(), { key: "Escape" });
+
+    expect(noteField()).toBeNull();
+    expect(onNoteChange).not.toHaveBeenCalled();
+  });
+
+  it("writes nothing for an unchanged note", () => {
+    const onNoteChange = vi.fn();
+    render(<ItemRow {...editable({ userNote: "akciós", onNoteChange })} />);
+    startEdit();
+
+    fireEvent.change(noteField(), { target: { value: "akciós" } });
+    fireEvent.blur(noteField());
+
+    expect(onNoteChange).not.toHaveBeenCalled();
+  });
+
+  it("passes the cap on to the field", () => {
+    render(<ItemRow {...editable({ onNoteChange: vi.fn(), noteMaxLength: 120 })} />);
+    startEdit();
+    expect(noteField().getAttribute("maxlength")).toBe("120");
+  });
+
+  it("offers the pencil for a row that can only take a note", () => {
+    render(
+      <ItemRow {...baseProps} userNote="akciós" onNoteChange={vi.fn()} />,
+    );
+
+    expect(screen.getByLabelText("tej szerkesztése")).toBeTruthy();
+    fireEvent.click(screen.getByLabelText("tej szerkesztése"));
+    expect(noteField()).toBeTruthy();
+  });
+
+  it("leaves the caret in the amount field", () => {
+    render(<ItemRow {...editable({ onAmountChange: vi.fn(), onNoteChange: vi.fn() })} />);
+    startEdit();
+    expect(document.activeElement).toBe(amountField());
+  });
+});
+
 const card = (props) => ({
   accent: "#ffcc00",
   category: "Zöldségek",
