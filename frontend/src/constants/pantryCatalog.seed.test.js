@@ -50,7 +50,6 @@ describe("the ladder on the real catalog", () => {
       "őrölt fahéj": "fahéj",
       "őrölt fekete bors": "fekete bors",
       "őrölt kardamom": "kardamom",
-      "őrölt kömény": "kömény",
       "Szárított oregánó": "oregánó",
       "morzsolt oregánó": "oregánó",
       "Száraz fehérbor": "fehérbor",
@@ -68,6 +67,7 @@ describe("the ladder on the real catalog", () => {
 
   it("still protects the items whose own name starts with a state word", () => {
     expect(nameOf("őrölt kávé")).toBe("őrölt kávé");
+    expect(nameOf("őrölt kömény")).toBe("őrölt kömény");
     expect(nameOf("darált hús")).toBe("darált hús");
     expect(nameOf("darált sertés")).toBe("darált sertés");
     expect(nameOf("szárított tárkony")).toBe("szárított tárkony");
@@ -80,7 +80,7 @@ describe("the ladder on the real catalog", () => {
     expect(nameOf("vaníliás cukor")).toBe("vaníliás cukor");
     expect(nameOf("porcukor")).toBe("porcukor");
     expect(nameOf("teljeskiőrlésű liszt")).toBe("teljeskiőrlésű liszt");
-    expect(nameOf("cukrozatlan kakaópor")).toBe("cukrozatlan kakaópor");
+    expect(nameOf("cukrozatlan kakaópor")).toBe("holland kakaópor");
     expect(nameOf("étcsokoládé")).toBe("étcsokoládé");
     expect(nameOf("tojássárgája")).toBeNull();
     expect(nameOf("füstölt tofu")).toBeNull();

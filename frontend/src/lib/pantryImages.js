@@ -3,7 +3,7 @@ export function pantryImageSlug(nameKey) {
   return nameKey.toString().trim().replace(/\s+/g, "-");
 }
 
-export const PANTRY_IMAGE_EXT = "avif";
+export const PANTRY_IMAGE_EXT = "png";
 
 export function pantryImageUrl(item) {
   if (item?.imageUrl) return item.imageUrl;

@@ -839,7 +839,6 @@
   flex: none;
   border-radius: 6px;
   object-fit: cover;
-  background: var(--pill);
 }
 
 .item-label {
