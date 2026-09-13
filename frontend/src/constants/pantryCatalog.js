@@ -1,5 +1,9 @@
 import { normalizeCatalogText } from "./catalogText";
 import { ingredientNameCandidates } from "../lib/ingredientText";
+import {
+  buildSuggestionIndex,
+  searchSuggestions,
+} from "../lib/catalogSearch";
 
 const UNKNOWN_CATEGORY = "Egyéb";
 
@@ -53,6 +57,12 @@ export function createCatalog(catalogData) {
   }
 
   const CATALOG_ITEMS = Array.from(catalogByKey.values()).sort(compareEntries);
+
+  const SUGGESTION_INDEX = buildSuggestionIndex(CATALOG_ITEMS, aliasToEntry);
+
+  function searchCatalog(query, limit) {
+    return searchSuggestions(SUGGESTION_INDEX, query, limit);
+  }
 
   const TOKENIZED_KEYS = [
     ...Array.from(catalogByKey.values(), (entry) => [entry.key, entry]),
@@ -209,6 +219,7 @@ export function createCatalog(catalogData) {
 
   return {
     CATALOG_ITEMS,
+    searchCatalog,
     resolveCatalogKey,
     resolveCanonicalCatalogName,
     getCatalogItemByName,

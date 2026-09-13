@@ -1,8 +1,19 @@
 // @vitest-environment jsdom
 import { afterEach, describe, it, expect, vi } from "vitest";
-import { cleanup, render, screen, fireEvent } from "@testing-library/react";
+import {
+  cleanup,
+  render,
+  screen,
+  fireEvent,
+  within,
+} from "@testing-library/react";
 import Icon from "../Icon/Icon";
-import { ColorEditToggle, GroupCard, ItemRow } from "./GroupedItems";
+import {
+  AddItemRow,
+  ColorEditToggle,
+  GroupCard,
+  ItemRow,
+} from "./GroupedItems";
 
 const noop = () => {};
 const baseProps = {
@@ -460,5 +471,105 @@ describe("ColorEditToggle", () => {
     expect(button.getAttribute("aria-pressed")).toBe("true");
     expect(button.className).not.toContain("btn-outline-neutral");
     expect(iconPath(button)).toBe(iconPath(renderIcon("check")));
+  });
+});
+
+const SPENOT = {
+  key: "spenot",
+  name: "spenót",
+  category: "Zöldségek",
+  priority: "extra",
+  purchase: { unit: "g", amount: 200 },
+  imageUrl: null,
+};
+const SO = {
+  key: "so",
+  name: "só",
+  category: "Fűszerek",
+  priority: "essential",
+  purchase: null,
+  imageUrl: null,
+};
+
+const CATALOG = [SPENOT, SO];
+const addSuggest = (query) =>
+  query
+    ? CATALOG.filter((entry) => entry.key.startsWith(query)).map((entry) => ({
+        entry,
+        alias: null,
+      }))
+    : [];
+
+const UNITS = ["db", "g", "kg"];
+const addName = () => screen.getByPlaceholderText("Tétel hozzáadása");
+const addAmount = () => screen.getByPlaceholderText("menny.");
+const suggestion = () =>
+  within(screen.getByRole("listbox")).getAllByRole("option")[0];
+
+describe("AddItemRow with catalog suggestions", () => {
+  it("fills the name and the package the item is sold in", () => {
+    render(<AddItemRow units={UNITS} onAdd={noop} suggest={addSuggest} />);
+
+    fireEvent.change(addName(), { target: { value: "spe" } });
+    fireEvent.click(suggestion());
+
+    expect(addName().value).toBe("spenót");
+    expect(addAmount().value).toBe("200");
+    expect(screen.getByLabelText("Mértékegység").value).toBe("g");
+  });
+
+  it("falls back to a single piece with no package data", () => {
+    render(<AddItemRow units={UNITS} onAdd={noop} suggest={addSuggest} />);
+
+    fireEvent.change(addName(), { target: { value: "so" } });
+    fireEvent.click(suggestion());
+
+    expect(addAmount().value).toBe("1");
+    expect(screen.getByLabelText("Mértékegység").value).toBe("db");
+  });
+
+  it("keeps an amount the user has already typed", () => {
+    render(<AddItemRow units={UNITS} onAdd={noop} suggest={addSuggest} />);
+
+    fireEvent.change(addAmount(), { target: { value: "500" } });
+    fireEvent.change(addName(), { target: { value: "spe" } });
+    fireEvent.click(suggestion());
+
+    expect(addName().value).toBe("spenót");
+    expect(addAmount().value).toBe("500");
+    expect(screen.getByLabelText("Mértékegység").value).toBe("db");
+  });
+
+  it("adds the picked item with one more Enter, then clears the row", () => {
+    const onAdd = vi.fn();
+    render(<AddItemRow units={UNITS} onAdd={onAdd} suggest={addSuggest} />);
+
+    fireEvent.change(addName(), { target: { value: "spe" } });
+    fireEvent.keyDown(addName(), { key: "ArrowDown" });
+    fireEvent.keyDown(addName(), { key: "Enter" });
+    expect(onAdd).not.toHaveBeenCalled();
+
+    fireEvent.keyDown(addName(), { key: "Enter" });
+    expect(onAdd).toHaveBeenCalledWith({
+      name: "spenót",
+      amount: 200,
+      unit: "g",
+    });
+    expect(addName().value).toBe("");
+  });
+
+  it("still adds a name the catalog does not know", () => {
+    const onAdd = vi.fn();
+    render(<AddItemRow units={UNITS} onAdd={onAdd} suggest={addSuggest} />);
+
+    fireEvent.change(addName(), { target: { value: "nagymama süteménye" } });
+    fireEvent.change(addAmount(), { target: { value: "2" } });
+    fireEvent.keyDown(addName(), { key: "Enter" });
+
+    expect(onAdd).toHaveBeenCalledWith({
+      name: "nagymama süteménye",
+      amount: 2,
+      unit: "db",
+    });
   });
 });

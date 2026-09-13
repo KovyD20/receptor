@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import Icon from "../Icon/Icon";
 import { isPlainKey, isTypingTarget } from "../../lib/keyboard";
 import ColorPicker from "../ColorPicker/ColorPicker";
+import SuggestInput from "../SuggestInput/SuggestInput";
 import { pantryImageUrl } from "../../lib/pantryImages";
 
 export function CollapseAllToggle({ keys, anyClosed, onOpenAll, onCloseAll }) {
@@ -402,7 +403,7 @@ export function ItemRow({
   );
 }
 
-export function AddItemRow({ units, onAdd }) {
+export function AddItemRow({ units, onAdd, suggest, dropUp }) {
   const [draft, setDraft] = useState({ name: "", amount: "", unit: "db" });
 
   const submit = () => {
@@ -413,14 +414,28 @@ export function AddItemRow({ units, onAdd }) {
     setDraft({ name: "", amount: "", unit: "db" });
   };
 
+  const applySuggestion = (entry) => {
+    setDraft((prev) => {
+      if (prev.amount) return { ...prev, name: entry.name };
+      return {
+        name: entry.name,
+        amount: String(entry.purchase?.amount || 1),
+        unit: entry.purchase?.unit || prev.unit,
+      };
+    });
+  };
+
   return (
     <div className="add-item">
       <Icon name="plus" size={12} color="#7a7a7a" />
-      <input
+      <SuggestInput
         className="add-name"
         placeholder="Tétel hozzáadása"
+        suggest={suggest}
+        dropUp={dropUp}
         value={draft.name}
         onChange={(e) => setDraft((p) => ({ ...p, name: e.target.value }))}
+        onSelect={applySuggestion}
         onKeyDown={(e) => e.key === "Enter" && submit()}
       />
       <input
@@ -438,6 +453,9 @@ export function AddItemRow({ units, onAdd }) {
         aria-label="Mértékegység"
         onChange={(e) => setDraft((p) => ({ ...p, unit: e.target.value }))}
       >
+        {units.includes(draft.unit) ? null : (
+          <option value={draft.unit}>{draft.unit}</option>
+        )}
         {units.map((unit) => (
           <option key={unit} value={unit}>
             {unit}
