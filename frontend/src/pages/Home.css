@@ -871,6 +871,13 @@
   text-overflow: ellipsis;
 }
 
+.item-controls {
+  display: flex;
+  align-items: center;
+  gap: inherit;
+  flex: none;
+}
+
 .item-stepper {
   display: flex;
   align-items: center;
@@ -915,14 +922,41 @@
   appearance: textfield;
 }
 
-.item-unit {
+.item-unit-wrap {
+  --unit-pad-l: 6px;
+  --unit-pad-r: 17px;
+  --unit-font-size: 12px;
+  --unit-font-weight: 600;
+  position: relative;
+  display: inline-block;
   height: 26px;
-  padding: 0 2px 0 5px;
-  font-size: 12px;
-  font-weight: 600;
+  flex: none;
+}
+.item-unit-wrap::after {
+  content: attr(data-unit);
+  display: block;
+  padding: 0 var(--unit-pad-r) 0 var(--unit-pad-l);
+  font-size: var(--unit-font-size);
+  font-weight: var(--unit-font-weight);
+  border: 1px solid transparent;
+  white-space: pre;
+  visibility: hidden;
+}
+
+.item-unit {
+  position: absolute;
+  inset: 0;
+  appearance: none;
+  padding: 0 var(--unit-pad-r, 17px) 0 var(--unit-pad-l, 6px);
+  font-size: var(--unit-font-size, 12px);
+  font-weight: var(--unit-font-weight, 600);
   font-family: inherit;
   color: var(--text-body);
-  background: var(--card-inset-2);
+  background-color: var(--card-inset-2);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath fill='%238a8a8a' d='M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 5px center;
+  background-size: 7px 7px;
   border: 1px solid #3d3d3d;
   border-radius: 7px;
 }
@@ -1723,7 +1757,14 @@
     padding: 10px 13px;
     border-top-color: #303030;
   }
-  .item-stepper {
+  .item-row.is-editing {
+    flex-wrap: wrap;
+  }
+  .item-row.is-editing .item-controls {
+    flex-basis: 100%;
+    justify-content: flex-end;
+  }
+  .item-stepper.has-steps {
     background: var(--pill);
     border: 1px solid var(--line);
     border-radius: 999px;
@@ -1742,15 +1783,15 @@
   }
   .item-qty-input,
   .item-unit {
-    height: 28px;
-    background: transparent;
+    background-color: transparent;
     border-color: transparent;
+  }
+  .item-qty-input,
+  .item-unit-wrap {
+    height: 28px;
   }
   .item-qty-input {
     width: 46px;
-  }
-  .item-unit {
-    max-width: 68px;
   }
   .item-row .icon-btn.danger,
   .item-row .item-edit {

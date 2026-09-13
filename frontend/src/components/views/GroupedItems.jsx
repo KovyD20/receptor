@@ -190,6 +190,7 @@ export function ItemRow({
 
   const canEdit = Boolean(onAmountChange || onUnitChange);
   const isEditing = canEdit && editing;
+  const showControls = isEditing || !canEdit;
 
   const stopEditing = () => {
     setEditing(false);
@@ -233,7 +234,7 @@ export function ItemRow({
   return (
     <div
       ref={rowRef}
-      className="item-row"
+      className={`item-row${isEditing ? " is-editing" : ""}`}
       role="listitem"
       aria-label={name}
       onKeyDown={handleKeyDown}
@@ -269,76 +270,86 @@ export function ItemRow({
         {note && <span className="item-note">{note}</span>}
       </div>
 
-      <div className="item-stepper">
-        <button
-          type="button"
-          className="icon-btn"
-          tabIndex={-1}
-          aria-label="Csökkentés"
-          disabled={disableDecrement}
-          onClick={onDecrement}
-        >
-          <Icon name="minus" size={11} />
-        </button>
-        {isEditing && onAmountChange ? (
-          <AmountField
-            value={amount}
-            onCommit={onAmountChange}
-            onDone={stopEditing}
-          />
-        ) : (
-          <span className="item-qty">{qtyLabel}</span>
-        )}
-        {isEditing && onUnitChange && (
-          <select
-            className="item-unit"
-            aria-label="Mértékegység"
-            value={unit}
-            onChange={(e) => onUnitChange(e.target.value)}
+      <div className="item-controls">
+        <div className={`item-stepper${showControls ? " has-steps" : ""}`}>
+          {showControls && (
+            <button
+              type="button"
+              className="icon-btn"
+              tabIndex={-1}
+              aria-label="Csökkentés"
+              disabled={disableDecrement}
+              onClick={onDecrement}
+            >
+              <Icon name="minus" size={11} />
+            </button>
+          )}
+          {isEditing && onAmountChange ? (
+            <AmountField
+              value={amount}
+              onCommit={onAmountChange}
+              onDone={stopEditing}
+            />
+          ) : (
+            <span className="item-qty">{qtyLabel}</span>
+          )}
+          {isEditing && onUnitChange && (
+            <span className="item-unit-wrap" data-unit={unit || ""}>
+              <select
+                className="item-unit"
+                aria-label="Mértékegység"
+                value={unit}
+                onChange={(e) => onUnitChange(e.target.value)}
+              >
+                {(units || []).includes(unit) ? null : (
+                  <option value={unit}>{unit}</option>
+                )}
+                {(units || []).map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </span>
+          )}
+          {showControls && (
+            <button
+              type="button"
+              className="icon-btn"
+              tabIndex={-1}
+              aria-label="Növelés"
+              onClick={onIncrement}
+            >
+              <Icon name="plus" size={11} />
+            </button>
+          )}
+        </div>
+
+        {canEdit && (
+          <button
+            type="button"
+            className={`icon-btn item-edit${isEditing ? " is-active" : ""}`}
+            tabIndex={-1}
+            aria-label={`${name} szerkesztése`}
+            aria-pressed={isEditing}
+            onClick={() => (isEditing ? stopEditing() : setEditing(true))}
           >
-            {(units || []).includes(unit) ? null : (
-              <option value={unit}>{unit}</option>
-            )}
-            {(units || []).map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
+            <Icon name={isEditing ? "check" : "pen"} size={11} />
+          </button>
         )}
-        <button
-          type="button"
-          className="icon-btn"
-          tabIndex={-1}
-          aria-label="Növelés"
-          onClick={onIncrement}
-        >
-          <Icon name="plus" size={11} />
-        </button>
+
+        {showControls && (
+          <button
+            type="button"
+            className="icon-btn danger"
+            tabIndex={-1}
+            aria-label={`${name} törlése`}
+            onClick={onDelete}
+          >
+            <Icon name="trash" size={11} />
+          </button>
+        )}
       </div>
-
-      {canEdit && (
-        <button
-          type="button"
-          className={`icon-btn item-edit${isEditing ? " is-active" : ""}`}
-          tabIndex={-1}
-          aria-label={`${name} mennyiségének módosítása`}
-          aria-pressed={isEditing}
-          onClick={() => (isEditing ? stopEditing() : setEditing(true))}
-        >
-          <Icon name={isEditing ? "check" : "pen"} size={11} />
-        </button>
-      )}
-
-      <button
-        type="button"
-        className="icon-btn danger"
-        tabIndex={-1}
-        aria-label={`${name} törlése`}
-        onClick={onDelete}
-      >
-        <Icon name="trash" size={11} />
-      </button>
     </div>
   );
 }

@@ -73,15 +73,16 @@ const editable = (props) => ({
 
 const amountField = () => screen.getByLabelText("Mennyiség");
 const unitSelect = () => screen.getByLabelText("Mértékegység");
-const editButton = () =>
-  screen.getByLabelText("tej mennyiségének módosítása");
+const editButton = () => screen.getByLabelText("tej szerkesztése");
+const stepper = () => screen.queryByLabelText("Növelés");
+const bin = () => screen.queryByLabelText("tej törlése");
 const startEdit = () => fireEvent.click(editButton());
 
 describe("ItemRow edit toggle", () => {
   it("offers no pencil when the row has no edit handler", () => {
     render(<ItemRow {...baseProps} />);
     expect(screen.getByText("1 l")).toBeTruthy();
-    expect(screen.queryByLabelText("tej mennyiségének módosítása")).toBeNull();
+    expect(screen.queryByLabelText("tej szerkesztése")).toBeNull();
   });
 
   it("shows the plain label until the pencil is pressed", () => {
@@ -123,6 +124,43 @@ describe("ItemRow edit toggle", () => {
     startEdit();
     fireEvent.keyDown(amountField(), { key: "Escape" });
     expect(screen.queryByLabelText("Mennyiség")).toBeNull();
+  });
+
+  it("keeps the stepper and the bin out of a closed row", () => {
+    render(<ItemRow {...editable({ onAmountChange: vi.fn() })} />);
+
+    expect(stepper()).toBeNull();
+    expect(screen.queryByLabelText("Csökkentés")).toBeNull();
+    expect(bin()).toBeNull();
+    expect(screen.getByText("1 l")).toBeTruthy();
+
+    startEdit();
+
+    expect(stepper()).toBeTruthy();
+    expect(screen.getByLabelText("Csökkentés")).toBeTruthy();
+    expect(bin()).toBeTruthy();
+  });
+
+  it("leaves the stepper and the bin on show without a pencil", () => {
+    render(<ItemRow {...baseProps} />);
+
+    expect(stepper()).toBeTruthy();
+    expect(bin()).toBeTruthy();
+  });
+
+  it("still steps and deletes from the keyboard while closed", () => {
+    const onIncrement = vi.fn();
+    const onDelete = vi.fn();
+    const { container } = render(
+      <ItemRow {...editable({ onAmountChange: vi.fn(), onIncrement, onDelete })} />,
+    );
+    const row = container.querySelector(".item-row");
+
+    fireEvent.keyDown(row, { key: "ArrowRight" });
+    fireEvent.keyDown(row, { key: "Delete" });
+
+    expect(onIncrement).toHaveBeenCalledTimes(1);
+    expect(onDelete).toHaveBeenCalledTimes(1);
   });
 
   it("edits only the row whose pencil was pressed", () => {
@@ -206,6 +244,22 @@ describe("ItemRow amount and unit editing", () => {
 
     fireEvent.change(unitSelect(), { target: { value: "g" } });
     expect(onUnitChange).toHaveBeenCalledWith("g");
+  });
+
+  it("hands the unit box the selected unit to size itself by", () => {
+    const { rerender } = render(
+      <ItemRow {...editable({ unit: "l", onUnitChange: vi.fn() })} />,
+    );
+    startEdit();
+
+    const sizerUnit = () =>
+      document.querySelector(".item-unit-wrap")?.getAttribute("data-unit");
+    expect(sizerUnit()).toBe("l");
+
+    rerender(<ItemRow {...editable({ unit: "konzerv", onUnitChange: vi.fn() })} />);
+    expect(sizerUnit()).toBe("konzerv");
+    rerender(<ItemRow {...editable({ unit: "zacskó", onUnitChange: vi.fn() })} />);
+    expect(sizerUnit()).toBe("zacskó");
   });
 
   it("keeps a unit that is not on the list selectable", () => {
