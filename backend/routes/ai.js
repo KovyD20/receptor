@@ -11,6 +11,7 @@ const {
   OPTIONS_SCHEMA,
   SYSTEM_PROMPT,
 } = require("../lib/aiSchemas");
+const { catalogNamePrompt } = require("../lib/catalogNames");
 const { fetchPageHtml } = require("../lib/recipeUrl");
 const { htmlToText } = require("../lib/htmlText");
 const { extractRecipe, recipeToText } = require("../lib/recipeJsonLd");
@@ -43,6 +44,10 @@ const recipeFromFridgeSchema = z.object({
   items: z.array(itemSchema).min(1),
 });
 
+async function withCatalogNames(prompt) {
+  return `${prompt}${await catalogNamePrompt()}`;
+}
+
 function describeItems(items) {
   return items
     .map((item) => `${item.name} (${item.amount ?? ""} ${item.unit ?? ""})`.trim())
@@ -66,7 +71,9 @@ router.post("/recipe-by-name", validate(recipeByNameSchema), async (req, res) =>
   try {
     const recipe = await generateJson({
       system: SYSTEM_PROMPT,
-      prompt: `Készíts receptet az alábbi ételnév alapján: "${name}"`,
+      prompt: await withCatalogNames(
+        `Készíts receptet az alábbi ételnév alapján: "${name}"`,
+      ),
       schema: RECIPE_SCHEMA,
     });
     res.json({ recipe });
@@ -107,7 +114,7 @@ router.post("/recipe-from-fridge", validate(recipeFromFridgeSchema), async (req,
   try {
     const { feasible, ...recipe } = await generateJson({
       system: SYSTEM_PROMPT,
-      prompt,
+      prompt: await withCatalogNames(prompt),
       schema: FRIDGE_RECIPE_SCHEMA,
     });
     if (!feasible) {
@@ -168,7 +175,7 @@ router.post("/recipe-from-url", validate(recipeFromUrlSchema), async (req, res) 
   try {
     const { found, ...recipe } = await generateJson({
       system: SYSTEM_PROMPT,
-      prompt,
+      prompt: await withCatalogNames(prompt),
       schema: URL_RECIPE_SCHEMA,
       maxTokens: 6144,
     });
