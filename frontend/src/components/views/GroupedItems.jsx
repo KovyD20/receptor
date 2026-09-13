@@ -21,6 +21,24 @@ export function CollapseAllToggle({ keys, anyClosed, onOpenAll, onCloseAll }) {
   );
 }
 
+export function ColorEditToggle({ groupCount, active, onToggle }) {
+  if (!groupCount) return null;
+
+  return (
+    <button
+      type="button"
+      className={`btn-pill btn-outline${
+        active ? "" : " btn-outline-neutral"
+      } color-edit-toggle`}
+      aria-pressed={active}
+      onClick={onToggle}
+    >
+      <Icon name={active ? "check" : "xmark"} size={11} />
+      Színek szerkesztése
+    </button>
+  );
+}
+
 export function GroupCard({
   accent,
   category,
@@ -30,10 +48,14 @@ export function GroupCard({
   navProps,
   onColorChange,
   onColorReset,
+  colorEditing,
   isCustomColor,
   children,
 }) {
   const [picking, setPicking] = useState(false);
+
+  const canPickColor = Boolean(onColorChange) && Boolean(colorEditing);
+  if (picking && !canPickColor) setPicking(false);
 
   return (
     <div className="group-card" style={{ "--accent": accent }}>
@@ -70,6 +92,7 @@ export function GroupCard({
             className="group-color"
             aria-label={`${category} színének módosítása`}
             aria-expanded={picking}
+            disabled={!canPickColor}
             onClick={() => setPicking((prev) => !prev)}
           >
             <span className="group-color-dot" />

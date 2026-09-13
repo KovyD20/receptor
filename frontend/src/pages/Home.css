@@ -722,9 +722,11 @@
   align-items: center;
   gap: 8px;
   flex: none;
+  flex-wrap: wrap;
 }
 
-.collapse-all {
+.collapse-all,
+.color-edit-toggle {
   flex: none;
   padding: 9px 14px;
 }
@@ -743,8 +745,11 @@
   background: color-mix(in srgb, var(--accent) 14%, transparent);
   cursor: pointer;
 }
-.group-color:hover {
+.group-color:hover:not(:disabled) {
   background: color-mix(in srgb, var(--accent) 24%, transparent);
+}
+.group-color:disabled {
+  cursor: default;
 }
 .group-color-dot {
   width: 14px;

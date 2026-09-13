@@ -53,3 +53,51 @@ describe("ShoppingView 'Lista ürítése'", () => {
     expect(clearAllButton().disabled).toBe(false);
   });
 });
+
+const groupsWithOneItem = [
+  {
+    category: "Zöldségek",
+    items: [{ id: "1", name: "sárgarépa", amount: 2, unit: "db", done: false }],
+  },
+];
+
+const colorProps = {
+  ...baseProps,
+  groups: groupsWithOneItem,
+  openCount: 1,
+  colorFor: () => "#ffcc00",
+  onCategoryColorChange: () => {},
+};
+
+const colorToggle = () =>
+  screen.queryByRole("button", { name: "Színek szerkesztése" });
+const categoryDot = () =>
+  screen.getByLabelText("Zöldségek színének módosítása");
+
+describe("ShoppingView colour edit mode", () => {
+  it("leaves the dots inert until the toggle is pressed", () => {
+    render(<ShoppingView {...colorProps} />);
+
+    expect(categoryDot().disabled).toBe(true);
+    fireEvent.click(colorToggle());
+    expect(categoryDot().disabled).toBe(false);
+  });
+
+  it("offers no toggle when the view cannot change colours", () => {
+    render(<ShoppingView {...colorProps} onCategoryColorChange={undefined} />);
+    expect(colorToggle()).toBeNull();
+  });
+
+  it("offers no toggle while there is no category on screen", () => {
+    render(<ShoppingView {...colorProps} groups={[]} />);
+    expect(colorToggle()).toBeNull();
+  });
+
+  it("works from the mobile tools row too", () => {
+    render(<ShoppingView {...colorProps} isMobile />);
+
+    expect(categoryDot().disabled).toBe(true);
+    fireEvent.click(colorToggle());
+    expect(categoryDot().disabled).toBe(false);
+  });
+});

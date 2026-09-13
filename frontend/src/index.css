@@ -137,14 +137,14 @@ button {
 }
 
 .btn-outline {
-  background: transparent;
+  background: var(--chip);
   border: 2px solid var(--accent, var(--line-dashed));
   color: var(--accent, #a8a8a8);
   padding: 9px 18px;
   font-size: 12px;
 }
 .btn-outline:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--accent, #4a4a4a) 12%, transparent);
+  background: color-mix(in srgb, var(--accent, #4a4a4a) 22%, var(--chip));
 }
 
 .btn-outline-neutral {
@@ -152,7 +152,7 @@ button {
   color: #a8a8a8;
 }
 .btn-outline-neutral:hover:not(:disabled) {
-  background: var(--card-inset);
+  background: #3a3a3a;
 }
 
 .panel-title {

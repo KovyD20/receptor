@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, describe, it, expect, vi } from "vitest";
 import { cleanup, render, screen, fireEvent } from "@testing-library/react";
-import { ItemRow } from "./GroupedItems";
+import Icon from "../Icon/Icon";
+import { ColorEditToggle, GroupCard, ItemRow } from "./GroupedItems";
 
 const noop = () => {};
 const baseProps = {
@@ -215,5 +216,104 @@ describe("ItemRow amount and unit editing", () => {
     expect(
       [...unitSelect().options].map((option) => option.value),
     ).toEqual(["zacskó", "db", "g", "l"]);
+  });
+});
+
+const card = (props) => ({
+  accent: "#ffcc00",
+  category: "Zöldségek",
+  meta: "3 tétel",
+  open: false,
+  onToggle: noop,
+  onColorChange: vi.fn(),
+  ...props,
+});
+
+const iconPath = (root) => root.querySelector("svg path").getAttribute("d");
+const renderIcon = (name) => {
+  const host = document.createElement("div");
+  render(<Icon name={name} />, { container: document.body.appendChild(host) });
+  return host;
+};
+
+const colorDot = () =>
+  screen.queryByLabelText("Zöldségek színének módosítása");
+const colorPanel = () => screen.queryByRole("group", { name: "Zöldségek színe" });
+
+describe("GroupCard colour dot", () => {
+  it("shows the dot but will not open it while colour editing is off", () => {
+    render(<GroupCard {...card()} />);
+
+    expect(colorDot()).toBeTruthy();
+    expect(colorDot().disabled).toBe(true);
+
+    fireEvent.click(colorDot());
+    expect(colorPanel()).toBeNull();
+  });
+
+  it("opens the picker once colour editing is on", () => {
+    render(<GroupCard {...card({ colorEditing: true })} />);
+
+    expect(colorDot().disabled).toBe(false);
+    fireEvent.click(colorDot());
+    expect(colorPanel()).toBeTruthy();
+  });
+
+  it("renders no dot at all when the caller cannot change colours", () => {
+    render(<GroupCard {...card({ onColorChange: undefined, colorEditing: true })} />);
+    expect(colorDot()).toBeNull();
+  });
+
+  it("closes an open picker when colour editing is switched off", () => {
+    const { rerender } = render(<GroupCard {...card({ colorEditing: true })} />);
+    fireEvent.click(colorDot());
+    expect(colorPanel()).toBeTruthy();
+
+    rerender(<GroupCard {...card({ colorEditing: false })} />);
+    expect(colorPanel()).toBeNull();
+
+    rerender(<GroupCard {...card({ colorEditing: true })} />);
+    expect(colorPanel()).toBeNull();
+  });
+
+  it("reports the picked colour and closes", () => {
+    const onColorChange = vi.fn();
+    render(<GroupCard {...card({ colorEditing: true, onColorChange })} />);
+    fireEvent.click(colorDot());
+
+    const swatch = colorPanel().querySelector(".color-swatch");
+    fireEvent.click(swatch);
+
+    expect(onColorChange).toHaveBeenCalledTimes(1);
+    expect(colorPanel()).toBeNull();
+  });
+});
+
+describe("ColorEditToggle", () => {
+  it("stays out of the way when there is no card to recolour", () => {
+    const { container } = render(
+      <ColorEditToggle groupCount={0} active={false} onToggle={noop} />,
+    );
+    expect(container.firstChild).toBeNull();
+  });
+
+  it("reports its state and reacts to a press", () => {
+    const onToggle = vi.fn();
+    const { rerender } = render(
+      <ColorEditToggle groupCount={2} active={false} onToggle={onToggle} />,
+    );
+
+    const button = screen.getByRole("button", { name: "Színek szerkesztése" });
+    expect(button.getAttribute("aria-pressed")).toBe("false");
+    expect(button.className).toContain("btn-outline-neutral");
+    expect(iconPath(button)).toBe(iconPath(renderIcon("xmark")));
+
+    fireEvent.click(button);
+    expect(onToggle).toHaveBeenCalledTimes(1);
+
+    rerender(<ColorEditToggle groupCount={2} active onToggle={onToggle} />);
+    expect(button.getAttribute("aria-pressed")).toBe("true");
+    expect(button.className).not.toContain("btn-outline-neutral");
+    expect(iconPath(button)).toBe(iconPath(renderIcon("check")));
   });
 });
