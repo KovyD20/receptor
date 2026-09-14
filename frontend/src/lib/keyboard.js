@@ -32,6 +32,12 @@ export function isTypingTarget(eventOrTarget) {
   return true;
 }
 
+export const ROVING_ITEM_ATTR = "data-kbd-item";
+
+export function arrowReachable(key) {
+  return { tabIndex: -1, [ROVING_ITEM_ATTR]: key };
+}
+
 export function isPlainKey(event) {
   return !event.ctrlKey && !event.metaKey && !event.altKey;
 }

@@ -5,6 +5,8 @@ import {
   searchSuggestions,
 } from "../lib/catalogSearch";
 
+const BROWSE_LIMIT = 60;
+
 const UNKNOWN_CATEGORY = "Egyéb";
 
 
@@ -62,6 +64,10 @@ export function createCatalog(catalogData) {
 
   function searchCatalog(query, limit) {
     return searchSuggestions(SUGGESTION_INDEX, query, limit);
+  }
+
+  function browseCatalog(limit = BROWSE_LIMIT) {
+    return CATALOG_ITEMS.slice(0, limit).map((entry) => ({ entry }));
   }
 
   const TOKENIZED_KEYS = [
@@ -220,6 +226,7 @@ export function createCatalog(catalogData) {
   return {
     CATALOG_ITEMS,
     searchCatalog,
+    browseCatalog,
     resolveCatalogKey,
     resolveCanonicalCatalogName,
     getCatalogItemByName,

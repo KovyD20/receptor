@@ -1,8 +1,8 @@
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
-import { isTypingTarget } from "../lib/keyboard";
+import { isTypingTarget, ROVING_ITEM_ATTR } from "../lib/keyboard";
 import { bestInDirection } from "../lib/spatialFocus";
 
-const ITEM_ATTR = "data-kbd-item";
+const ITEM_ATTR = ROVING_ITEM_ATTR;
 const ITEM_SELECTOR = `[${ITEM_ATTR}]`;
 const FALLBACK_SELECTOR = "[data-kbd-fallback]";
 
@@ -65,13 +65,16 @@ export function useListKeyboardNav({ layout = "list" } = {}) {
       const index = items.indexOf(current);
       if (index === -1) return;
 
-      if (layout === "grid") {
-        const next = bestInDirection(current, direction, items);
-        if (!next) return;
+      const byGeometry = bestInDirection(current, direction, items);
+      if (byGeometry) {
         event.preventDefault();
-        next.focus();
+        byGeometry.focus();
         return;
       }
+
+      if (layout === "grid") return;
+
+      if (current.getBoundingClientRect().height > 0) return;
 
       const moved = focusAt(items, index + (direction === "down" ? 1 : -1));
       if (moved) event.preventDefault();

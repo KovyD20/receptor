@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from "react";
-import { isPlainKey, isTypingTarget } from "../lib/keyboard";
+import { isPlainKey, isTypingTarget, ROVING_ITEM_ATTR } from "../lib/keyboard";
 import { bestInDirection } from "../lib/spatialFocus";
 
 const FOCUSABLE = [
@@ -22,14 +22,29 @@ const DIRECTIONS = {
 function fieldArrowPolicy(element) {
   if (!isTypingTarget(element)) return "navigate";
   const tag = element.tagName;
-  if (tag === "TEXTAREA" || tag === "SELECT") return "native";
+  if (tag === "TEXTAREA") return "native";
+  if (tag === "SELECT") return "horizontal-only";
   if (tag === "INPUT") {
     const type = String(element.type || "text").toLowerCase();
-    if (type === "number" || type === "range" || type === "date" || type === "time")
-      return "native";
+    if (type === "number") return "horizontal-only";
+    if (type === "date" || type === "time") return "native";
     return "vertical-only";
   }
   return "native";
+}
+
+function caretCanMove(element, direction) {
+  let start = null;
+  let end = null;
+  try {
+    start = element.selectionStart;
+    end = element.selectionEnd;
+  } catch {
+    return false;
+  }
+  if (start === null || end === null) return false;
+  if (start !== end) return true;
+  return direction === "left" ? start > 0 : end < (element.value?.length ?? 0);
 }
 
 function isVisible(element) {
@@ -38,7 +53,8 @@ function isVisible(element) {
 
 function isCandidate(element) {
   if (element.disabled) return false;
-  if (element.tabIndex < 0) return false;
+  if (element.tabIndex < 0 && !element.hasAttribute(ROVING_ITEM_ATTR))
+    return false;
   if (element.hasAttribute("data-nav-skip")) return false;
   if (element.closest('[aria-hidden="true"]')) return false;
   if (element.closest("[hidden]")) return false;
@@ -107,7 +123,18 @@ export function useSpatialNav({ enabled = true, onFallback } = {}) {
       if (active) {
         const policy = fieldArrowPolicy(active);
         if (policy === "native") return;
-        if (policy === "vertical-only" && direction !== "up" && direction !== "down")
+        if (
+          policy === "vertical-only" &&
+          direction !== "up" &&
+          direction !== "down" &&
+          caretCanMove(active, direction)
+        )
+          return;
+        if (
+          policy === "horizontal-only" &&
+          direction !== "left" &&
+          direction !== "right"
+        )
           return;
       }
 

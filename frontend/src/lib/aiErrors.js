@@ -24,7 +24,12 @@ const MESSAGES = {
     "Ebből a hozzávaló-listából nem készíthető el ez az étel. Válassz másikat.",
 };
 
-function quotaMessage(retryAfterSeconds) {
+function quotaMessage(data) {
+  const retryAfterSeconds = data?.retry_after_seconds;
+
+  if (data?.quota_scope === "daily") {
+    return "Az AI napi ingyenes keretét elhasználtuk. Próbáld újra holnap.";
+  }
   if (retryAfterSeconds && retryAfterSeconds <= 300) {
     return `Az AI percenkénti keretét elhasználtuk. Próbáld újra kb. ${retryAfterSeconds} másodperc múlva.`;
   }
@@ -35,7 +40,7 @@ export function aiErrorMessage(status, data) {
   const code = data?.code;
 
   if (code === "AI_QUOTA") {
-    return quotaMessage(data?.retry_after_seconds);
+    return quotaMessage(data);
   }
 
   if (code && MESSAGES[code]) return MESSAGES[code];

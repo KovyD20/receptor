@@ -18,7 +18,12 @@ export function bestInDirection(origin, direction, list) {
   let bestScore = Infinity;
 
   for (const element of list) {
-    if (element === origin || origin.contains(element)) continue;
+    if (
+      element === origin ||
+      origin.contains(element) ||
+      element.contains(origin)
+    )
+      continue;
     const rect = element.getBoundingClientRect();
     const to = centerOf(rect);
 

@@ -79,6 +79,31 @@ export default function CookMode({
           )}
         </div>
 
+        {isLast ? (
+          <div className="cook-peek is-last">
+            <span className="cook-peek-body">
+              <span className="cook-peek-label">Ez az utolsó lépés</span>
+              <span className="cook-peek-text">
+                Utána a „Kész” gomb zárja a főzés módot.
+              </span>
+            </span>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="cook-peek"
+            onClick={() => onStep(index + 1)}
+          >
+            <span className="cook-peek-body">
+              <span className="cook-peek-label">
+                Következik · {index + 2}. lépés
+              </span>
+              <span className="cook-peek-text">{steps[index + 1]}</span>
+            </span>
+            <Icon name="arrowRight" size={13} />
+          </button>
+        )}
+
         <div className="cook-nav">
           <button
             type="button"

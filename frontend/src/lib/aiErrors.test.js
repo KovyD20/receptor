@@ -21,6 +21,18 @@ describe("aiErrorMessage", () => {
     expect(message).toContain("31");
   });
 
+  it("believes the daily scope over a short retry hint", () => {
+    const message = aiErrorMessage(429, {
+      error: "AI quota exceeded",
+      code: "AI_QUOTA",
+      retry_after_seconds: 14,
+      quota_scope: "daily",
+    });
+    expect(message).toMatch(/napi/i);
+    expect(message).toMatch(/holnap/i);
+    expect(message).not.toContain("14");
+  });
+
   it("treats a long retry hint as the daily cap, not a short wait", () => {
     const message = aiErrorMessage(429, {
       code: "AI_QUOTA",

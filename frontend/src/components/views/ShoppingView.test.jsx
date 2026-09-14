@@ -101,3 +101,76 @@ describe("ShoppingView colour edit mode", () => {
     expect(categoryDot().disabled).toBe(false);
   });
 });
+
+const recProps = {
+  ...baseProps,
+  recommendations: {
+    essential: [{ key: "tej", name: "tej", category: "Tejtermékek" }],
+    goodToHave: [
+      { key: "vaj margarin", name: "vaj / margarin", category: "Tejtermékek" },
+    ],
+    extra: [],
+  },
+};
+
+const recThumbSrcs = () =>
+  Array.from(document.querySelectorAll(".rec-row-thumb")).map((img) =>
+    img.getAttribute("src"),
+  );
+
+const moreButton = () =>
+  screen.getByRole("button", { name: /További ajánlott tételek/ });
+
+describe("ShoppingView recommendations", () => {
+  it("shows the catalog thumbnail beside a missing staple", () => {
+    render(<ShoppingView {...recProps} />);
+    expect(recThumbSrcs()).toEqual(["/pantry/tej.png"]);
+  });
+
+  it("covers the items behind 'További ajánlott tételek' as well", () => {
+    render(<ShoppingView {...recProps} />);
+    fireEvent.click(moreButton());
+    expect(recThumbSrcs()).toEqual([
+      "/pantry/tej.png",
+      "/pantry/vaj-margarin.png",
+    ]);
+  });
+
+  it("prefers an explicit imageUrl from the catalog", () => {
+    render(
+      <ShoppingView
+        {...recProps}
+        recommendations={{
+          ...recProps.recommendations,
+          essential: [
+            {
+              key: "tej",
+              name: "tej",
+              category: "Tejtermékek",
+              imageUrl: "https://cdn/x/milk.webp",
+            },
+          ],
+        }}
+      />,
+    );
+    expect(recThumbSrcs()).toEqual(["https://cdn/x/milk.webp"]);
+  });
+
+  it("drops the pictures on a phone, as the list rows do", () => {
+    render(<ShoppingView {...recProps} isMobile />);
+
+    expect(recThumbSrcs()).toEqual([]);
+    expect(screen.getByText("tej")).toBeTruthy();
+  });
+
+  it("drops an image that fails to load, leaving the row addable", () => {
+    const onAddItem = vi.fn();
+    render(<ShoppingView {...recProps} onAddItem={onAddItem} />);
+
+    fireEvent.error(document.querySelector(".rec-row-thumb"));
+
+    expect(recThumbSrcs()).toEqual([]);
+    fireEvent.click(screen.getByRole("button", { name: "tej a listára" }));
+    expect(onAddItem).toHaveBeenCalledTimes(1);
+  });
+});

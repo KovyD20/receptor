@@ -412,6 +412,25 @@
   color: var(--text-mute);
 }
 
+.recipe-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.tag-pill.is-own {
+  background: var(--card-inset);
+  border-color: var(--line-soft);
+  color: var(--text-mute);
+  font-weight: 600;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .tag-pill {
   align-self: flex-start;
   margin-top: 4px;
@@ -901,6 +920,13 @@
   border-color: var(--accent);
 }
 
+.step-row:focus-visible,
+.stock-have:focus-visible,
+.stock-missing:focus-visible {
+  outline-offset: -2px;
+  border-radius: 8px;
+}
+
 .item-stepper {
   display: flex;
   align-items: center;
@@ -1027,9 +1053,14 @@
   color: var(--text-body);
   min-width: 0;
 }
-.add-item input:focus,
-.add-item select:focus {
+.add-item input:focus:not(:focus-visible),
+.add-item select:focus:not(:focus-visible) {
   outline: none;
+}
+.add-item input:focus-visible,
+.add-item select:focus-visible {
+  outline-offset: 1px;
+  border-radius: 6px;
 }
 .add-item input::placeholder {
   color: var(--text-mute);
@@ -1077,6 +1108,13 @@
   border-top: 1px solid var(--line-soft);
   font-size: 15px;
   color: #d2d2d2;
+}
+.rec-row-thumb {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: 6px;
+  object-fit: cover;
 }
 .rec-row-name {
   flex: 1;
@@ -1418,6 +1456,55 @@
   font-weight: 600;
 }
 
+.cook-peek {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 44px 20px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  border: 1px solid var(--line-bar);
+  background: #1b1615;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  flex: none;
+}
+.cook-peek:hover {
+  background: #221b19;
+  border-color: #4a3a33;
+}
+.cook-peek.is-last {
+  cursor: default;
+}
+.cook-peek-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cook-peek-label {
+  font-family: var(--font-display);
+  font-variant: all-small-caps;
+  letter-spacing: 1.4px;
+  font-size: 14px;
+  color: var(--orange);
+}
+.cook-peek-text {
+  font-size: 15px;
+  line-height: 1.4;
+  color: #b9b2ae;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.cook-peek > svg {
+  flex: none;
+  color: var(--text-mute);
+}
+
 .cook-nav {
   display: flex;
   gap: 14px;
@@ -1631,6 +1718,13 @@
     margin: 0;
     padding: 4px 9px;
     flex: none;
+  }
+  .recipe-card-tags {
+    flex: none;
+    flex-wrap: nowrap;
+  }
+  .tag-pill.is-own {
+    max-width: 84px;
   }
 
   .recipe-head {
@@ -1969,6 +2063,17 @@
   .cook-chip {
     padding: 8px 14px;
     font-size: 15px;
+  }
+  .cook-peek {
+    margin: 0 16px 4px;
+    padding: 11px 14px;
+    gap: 10px;
+  }
+  .cook-peek-label {
+    font-size: 13px;
+  }
+  .cook-peek-text {
+    font-size: 14px;
   }
   .cook-nav {
     padding: 16px 16px 26px;

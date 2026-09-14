@@ -126,3 +126,30 @@ describe("bestInDirection: general rules", () => {
     expect(name(bestInDirection(origin, "left", [origin, before]))).toBe("before");
   });
 });
+
+describe("bestInDirection: a container is never a target", () => {
+  const openRow = () => {
+    const row = box("sor", 27, 344, 466, 416);
+    const note = box("megjegyzés", 115, 383, 219, 405);
+    const amount = box("mennyiség", 259, 368, 313, 394);
+    const unit = box("egység", 315, 368, 346, 394);
+    row.append(note, amount, unit);
+    document.body.append(row);
+    return { row, note, amount, unit, list: [row, note, amount, unit] };
+  };
+
+  it("reaches the note to the left of the amount, not the row around it", () => {
+    const { amount, note, list } = openRow();
+    expect(name(bestInDirection(amount, "left", list))).toBe(name(note));
+  });
+
+  it("reaches the unit to the right of the amount", () => {
+    const { amount, unit, list } = openRow();
+    expect(name(bestInDirection(amount, "right", list))).toBe(name(unit));
+  });
+
+  it("still refuses to step into the origin's own children", () => {
+    const { row, list } = openRow();
+    expect(bestInDirection(row, "right", list)).toBeNull();
+  });
+});

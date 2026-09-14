@@ -27,7 +27,7 @@ const ALIASES = new Map([["krumpli", ENTRIES[3]]]);
 const index = buildSuggestionIndex(ENTRIES, ALIASES);
 const suggest = (query) => searchSuggestions(index, query);
 
-function Harness({ onSelect = () => {}, onKeyDown, plain = false }) {
+function Harness({ onSelect = () => {}, onKeyDown, plain = false, browse }) {
   const [value, setValue] = useState("");
   return (
     <SuggestInput
@@ -35,6 +35,7 @@ function Harness({ onSelect = () => {}, onKeyDown, plain = false }) {
       onChange={(event) => setValue(event.target.value)}
       onSelect={onSelect}
       onKeyDown={onKeyDown}
+      browse={browse}
       suggest={plain ? undefined : suggest}
       placeholder="Tétel hozzáadása"
     />
@@ -193,5 +194,67 @@ describe("SuggestInput", () => {
 
     expect(screen.queryByRole("listbox")).toBeNull();
     expect(field().value).toBe("ke");
+  });
+});
+
+describe("SuggestInput browsing", () => {
+  const browse = () => ENTRIES.map((e) => ({ entry: e }));
+
+  it("opens the whole catalog on Enter over an empty field", () => {
+    render(<Harness browse={browse} />);
+    expect(options()).toHaveLength(0);
+
+    press("Enter");
+
+    expect(names()).toEqual([
+      expect.stringContaining("kenyér"),
+      expect.stringContaining("kefir"),
+      expect.stringContaining("natúr kefir"),
+      expect.stringContaining("burgonya"),
+    ]);
+  });
+
+  it("walks and picks from the browsed list", () => {
+    const onSelect = vi.fn();
+    render(<Harness browse={browse} onSelect={onSelect} />);
+
+    press("Enter");
+    press("ArrowDown");
+    press("ArrowDown");
+    press("Enter");
+
+    expect(onSelect).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "kefir" }),
+    );
+  });
+
+  it("goes back to searching as soon as something is typed", () => {
+    render(<Harness browse={browse} />);
+
+    press("Enter");
+    type("bur");
+
+    expect(names()).toEqual([expect.stringContaining("burgonya")]);
+  });
+
+  it("leaves Enter to the caller when a name has been typed", () => {
+    const onKeyDown = vi.fn();
+    render(<Harness browse={browse} onKeyDown={onKeyDown} />);
+
+    type("sajat termek");
+    press("Enter");
+
+    expect(onKeyDown).toHaveBeenCalled();
+    expect(options()).toHaveLength(0);
+  });
+
+  it("leaves the arrows alone while there is no list", () => {
+    render(<Harness plain />);
+
+    const down = fireEvent.keyDown(field(), { key: "ArrowDown" });
+    const up = fireEvent.keyDown(field(), { key: "ArrowUp" });
+
+    expect(down).toBe(true);
+    expect(up).toBe(true);
   });
 });

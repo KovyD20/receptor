@@ -17,6 +17,7 @@ export default function FridgeView({
   itemCount,
   units,
   suggest,
+  browse,
   isMobile,
   colorFor,
   isCustomColor,
@@ -89,7 +90,12 @@ export default function FridgeView({
           <div className="view-spacer" />
           {collapseToggle}
           {colorToggle}
-          <AddItemRow units={units} onAdd={onAddItem} suggest={suggest} />
+          <AddItemRow
+            units={units}
+            onAdd={onAddItem}
+            suggest={suggest}
+            browse={browse}
+          />
           <button
             type="button"
             className="btn-pill btn-outline"
@@ -178,6 +184,7 @@ export default function FridgeView({
           units={units}
           onAdd={onAddItem}
           suggest={suggest}
+          browse={browse}
           dropUp
         />
       )}

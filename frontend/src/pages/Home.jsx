@@ -131,6 +131,7 @@ export default function Home({ user }) {
   const {
     resolveCatalogKey,
     searchCatalog,
+    browseCatalog,
     ready: catalogReady,
     loading: catalogLoading,
     error: catalogError,
@@ -152,7 +153,7 @@ export default function Home({ user }) {
   const [showManualForm, setShowManualForm] = useState(false);
   const [importedRecipe, setImportedRecipe] = useState(null);
   const [filterTag, setFilterTag] = useState("all");
-  const [sortMode, setSortMode] = useState("name");
+  const [sortMode, setSortMode] = useState("course");
   const [search, setSearch] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [servingsFor, setServingsFor] = useState({});
@@ -491,6 +492,7 @@ export default function Home({ user }) {
           doneCount={doneCount}
           units={SYSTEM_UNITS}
           suggest={searchCatalog}
+          browse={browseCatalog}
           recommendations={missingRecommendations}
           isMobile={isMobile}
           colorFor={categoryColorFor}
@@ -534,6 +536,7 @@ export default function Home({ user }) {
           itemCount={fridge.length}
           units={SYSTEM_UNITS}
           suggest={searchCatalog}
+          browse={browseCatalog}
           isMobile={isMobile}
           colorFor={categoryColorFor}
           isCustomColor={isCustomCategoryColor}

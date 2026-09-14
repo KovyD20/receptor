@@ -62,6 +62,9 @@ function sendAiError(res, err, endpoint) {
   if (err.retryAfterSeconds) {
     payload.retry_after_seconds = err.retryAfterSeconds;
   }
+  if (err.quotaScope) {
+    payload.quota_scope = err.quotaScope;
+  }
   res.status(err.status || 500).json(payload);
 }
 

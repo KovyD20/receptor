@@ -6,6 +6,7 @@ import {
   ColorEditToggle,
   GroupCard,
   ItemRow,
+  PantryThumb,
 } from "./GroupedItems";
 import { useCollapsedGroups } from "../../hooks/useCollapsedGroups";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
@@ -14,11 +15,36 @@ import { shoppingRowNote, USER_NOTE_MAX } from "../../lib/inventory";
 const ACCENT = "var(--yellow)";
 const REC_KEY = "rec";
 
+function RecRow({ item, onAdd, showThumb }) {
+  return (
+    <div className="rec-row">
+      {showThumb && (
+        <PantryThumb
+          nameKey={item.key}
+          imageUrl={item.imageUrl}
+          className="rec-row-thumb"
+        />
+      )}
+      <span className="rec-row-name">{item.name}</span>
+      <span className="rec-row-cat">{item.category}</span>
+      <button
+        type="button"
+        className="icon-btn"
+        aria-label={`${item.name} a listára`}
+        onClick={() => onAdd(item)}
+      >
+        <Icon name="plus" size={11} />
+      </button>
+    </div>
+  );
+}
+
 function RecommendationsCard({
   essential,
   goodToHave,
   extra,
   onAdd,
+  showThumbs,
   isOpen,
   toggle,
 }) {
@@ -48,18 +74,12 @@ function RecommendationsCard({
             <p className="rec-empty">Minden alapvető tétel megvan.</p>
           ) : (
             essential.map((item) => (
-              <div key={item.key} className="rec-row">
-                <span className="rec-row-name">{item.name}</span>
-                <span className="rec-row-cat">{item.category}</span>
-                <button
-                  type="button"
-                  className="icon-btn"
-                  aria-label={`${item.name} a listára`}
-                  onClick={() => onAdd(item)}
-                >
-                  <Icon name="plus" size={11} />
-                </button>
-              </div>
+              <RecRow
+                key={item.key}
+                item={item}
+                onAdd={onAdd}
+                showThumb={showThumbs}
+              />
             ))
           )}
 
@@ -83,18 +103,12 @@ function RecommendationsCard({
                   <p className="rec-empty">Nincs hiányzó tétel.</p>
                 ) : (
                   items.map((item) => (
-                    <div key={item.key} className="rec-row">
-                      <span className="rec-row-name">{item.name}</span>
-                      <span className="rec-row-cat">{item.category}</span>
-                      <button
-                        type="button"
-                        className="icon-btn"
-                        aria-label={`${item.name} a listára`}
-                        onClick={() => onAdd(item)}
-                      >
-                        <Icon name="plus" size={11} />
-                      </button>
-                    </div>
+                    <RecRow
+                      key={item.key}
+                      item={item}
+                      onAdd={onAdd}
+                      showThumb={showThumbs}
+                    />
                   ))
                 )}
               </div>
@@ -111,6 +125,7 @@ export default function ShoppingView({
   doneCount,
   units,
   suggest,
+  browse,
   recommendations,
   isMobile,
   colorFor,
@@ -204,7 +219,12 @@ export default function ShoppingView({
           <div className="view-spacer" />
           {collapseToggle}
           {colorToggle}
-          <AddItemRow units={units} onAdd={onAddItem} suggest={suggest} />
+          <AddItemRow
+            units={units}
+            onAdd={onAddItem}
+            suggest={suggest}
+            browse={browse}
+          />
           <button
             type="button"
             className="btn-pill btn-outline"
@@ -322,6 +342,7 @@ export default function ShoppingView({
           })}
 
           <RecommendationsCard
+            showThumbs={!isMobile}
             essential={recommendations.essential}
             goodToHave={recommendations.goodToHave}
             extra={recommendations.extra}
@@ -343,6 +364,7 @@ export default function ShoppingView({
           units={units}
           onAdd={onAddItem}
           suggest={suggest}
+          browse={browse}
           dropUp
         />
       )}

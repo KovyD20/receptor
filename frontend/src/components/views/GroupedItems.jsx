@@ -67,16 +67,6 @@ export function GroupCard({
           aria-expanded={open}
           onClick={onToggle}
           {...navProps}
-          onKeyDown={(event) => {
-            if (!isPlainKey(event)) return;
-            if (event.key === "ArrowRight" && !open) {
-              event.preventDefault();
-              onToggle();
-            } else if (event.key === "ArrowLeft" && open) {
-              event.preventDefault();
-              onToggle();
-            }
-          }}
         >
           <span className="group-name">{category}</span>
           <span className="group-meta">{meta}</span>
@@ -127,7 +117,7 @@ export function GroupCard({
   );
 }
 
-function AmountField({ value, onCommit, onDone }) {
+function AmountField({ value, onCommit, onStep, onDone }) {
   const [draft, setDraft] = useState(null);
 
   const commit = () => {
@@ -150,6 +140,12 @@ function AmountField({ value, onCommit, onDone }) {
       onChange={(e) => setDraft(e.target.value)}
       onBlur={commit}
       onKeyDown={(e) => {
+        if (e.key === "+" || e.key === "-") {
+          e.preventDefault();
+          setDraft(null);
+          onStep?.(e.key === "+" ? 1 : -1);
+          return;
+        }
         if (e.key === "Enter") {
           e.preventDefault();
           commit();
@@ -200,6 +196,25 @@ function NoteField({ value, maxLength, onCommit, onDone }) {
   );
 }
 
+export function PantryThumb({ nameKey, imageUrl, className = "item-thumb" }) {
+  const [failedSrc, setFailedSrc] = useState(null);
+
+  const src = pantryImageUrl({ nameKey, imageUrl });
+  if (!src || failedSrc === src) return null;
+
+  return (
+    <img
+      className={className}
+      src={src}
+      alt=""
+      aria-hidden="true"
+      loading="lazy"
+      decoding="async"
+      onError={() => setFailedSrc(src)}
+    />
+  );
+}
+
 export function ItemRow({
   name,
   nameKey,
@@ -224,9 +239,7 @@ export function ItemRow({
   navProps,
 }) {
   const rowRef = useRef(null);
-  const [thumbFailed, setThumbFailed] = useState(false);
   const [editing, setEditing] = useState(false);
-  const thumbSrc = showThumb ? pantryImageUrl({ nameKey, imageUrl }) : null;
 
   const canEdit = Boolean(onAmountChange || onUnitChange || onNoteChange);
   const isEditing = canEdit && editing;
@@ -238,7 +251,7 @@ export function ItemRow({
   };
 
   const handleKeyDown = (event) => {
-    if (isTypingTarget(event) || !isPlainKey(event)) return;
+    if (event.defaultPrevented || !isPlainKey(event)) return;
 
     const run = (handler) => {
       if (!handler) return;
@@ -246,11 +259,33 @@ export function ItemRow({
       handler();
     };
 
+    if (isEditing) {
+      switch (event.key) {
+        case "+":
+          run(onIncrement);
+          return;
+        case "-":
+          if (!disableDecrement) run(onDecrement);
+          return;
+        case "Enter":
+          event.preventDefault();
+          stopEditing();
+          return;
+        case "Delete":
+          run(onDelete);
+          return;
+        default:
+          break;
+      }
+    }
+
+    if (isTypingTarget(event)) return;
+
     switch (event.key) {
-      case "ArrowRight":
+      case "+":
         run(onIncrement);
         break;
-      case "ArrowLeft":
+      case "-":
         if (!disableDecrement) run(onDecrement);
         break;
       case " ":
@@ -293,17 +328,7 @@ export function ItemRow({
         </button>
       )}
 
-      {thumbSrc && !thumbFailed && (
-        <img
-          className="item-thumb"
-          src={thumbSrc}
-          alt=""
-          aria-hidden="true"
-          loading="lazy"
-          decoding="async"
-          onError={() => setThumbFailed(true)}
-        />
-      )}
+      {showThumb && <PantryThumb nameKey={nameKey} imageUrl={imageUrl} />}
 
       <div className="item-label">
         <span className={`item-name${done ? " is-done" : ""}`}>{name}</span>
@@ -337,6 +362,10 @@ export function ItemRow({
             <AmountField
               value={amount}
               onCommit={onAmountChange}
+              onStep={(delta) => {
+                if (delta > 0) onIncrement?.();
+                else if (!disableDecrement) onDecrement?.();
+              }}
               onDone={stopEditing}
             />
           ) : (
@@ -403,7 +432,7 @@ export function ItemRow({
   );
 }
 
-export function AddItemRow({ units, onAdd, suggest, dropUp }) {
+export function AddItemRow({ units, onAdd, suggest, browse, dropUp }) {
   const [draft, setDraft] = useState({ name: "", amount: "", unit: "db" });
 
   const submit = () => {
@@ -412,6 +441,13 @@ export function AddItemRow({ units, onAdd, suggest, dropUp }) {
     if (!name || !Number.isFinite(amount) || amount <= 0) return;
     onAdd({ name, amount, unit: draft.unit || "db" });
     setDraft({ name: "", amount: "", unit: "db" });
+  };
+
+  const stepAmount = (delta) => {
+    setDraft((prev) => {
+      const next = (Number(prev.amount) || 0) + delta;
+      return { ...prev, amount: next > 0 ? String(next) : "" };
+    });
   };
 
   const applySuggestion = (entry) => {
@@ -432,6 +468,7 @@ export function AddItemRow({ units, onAdd, suggest, dropUp }) {
         className="add-name"
         placeholder="Tétel hozzáadása"
         suggest={suggest}
+        browse={browse}
         dropUp={dropUp}
         value={draft.name}
         onChange={(e) => setDraft((p) => ({ ...p, name: e.target.value }))}
@@ -446,7 +483,14 @@ export function AddItemRow({ units, onAdd, suggest, dropUp }) {
         placeholder="menny."
         value={draft.amount}
         onChange={(e) => setDraft((p) => ({ ...p, amount: e.target.value }))}
-        onKeyDown={(e) => e.key === "Enter" && submit()}
+        onKeyDown={(e) => {
+          if (e.key === "+" || e.key === "-") {
+            e.preventDefault();
+            stepAmount(e.key === "+" ? 1 : -1);
+            return;
+          }
+          if (e.key === "Enter") submit();
+        }}
       />
       <select
         value={draft.unit}

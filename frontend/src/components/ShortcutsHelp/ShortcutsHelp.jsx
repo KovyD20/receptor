@@ -31,8 +31,11 @@ const SECTIONS = [
       },
       {
         keys: [["↑"], ["↓"]],
-        label:
-          "Szám-, legördülő és többsoros mezőben a mező saját működése (érték, sor)",
+        label: "Szám- és többsoros mezőben a mező saját működése (érték, sor)",
+      },
+      {
+        keys: [["↑"], ["↓"]],
+        label: "Legördülőben az érték váltása — onnan a ← / → visz tovább",
       },
       { keys: [["Esc"]], label: "Kilépés a mezőből" },
     ],
@@ -44,18 +47,32 @@ const SECTIONS = [
         keys: [["↑"], ["↓"]],
         label: "Mozgás a sorok között, kártyahatáron át is",
       },
-      { keys: [["←"], ["→"]], label: "Mennyiség csökkentése / növelése" },
+      { keys: [["←"], ["→"]], label: "Ugrás a szomszédos kártyára" },
+      { keys: [["-"], ["+"]], label: "Mennyiség csökkentése / növelése" },
       { keys: [["Space"]], label: "„Megvéve” pipa (bevásárlólista)" },
       {
         keys: [["Enter"]],
         label: "Sor szerkesztése — mennyiség, egység, megjegyzés, törlés",
       },
       {
-        keys: [["Delete"]],
-        label: "Törlés — a megerősítő kérdésre Enter a válasz",
+        keys: [["←"], ["→"]],
+        label: "Nyitott soron: mennyiség ↔ egység ↔ megjegyzés",
       },
       {
-        keys: [["←"], ["→"]],
+        keys: [["↑"], ["↓"]],
+        label: "Nyitott soron a mennyiségen / egységen: az érték váltása",
+      },
+      {
+        keys: [["-"], ["+"]],
+        label: "Nyitott soron bárhol: a mennyiség léptetése",
+      },
+      { keys: [["Enter"]], label: "Nyitott soron: elfogadás, a sor bezárása" },
+      {
+        keys: [["Delete"]],
+        label: "Törlés (nyitott soron is) — a megerősítő kérdésre Enter a válasz",
+      },
+      {
+        keys: [["Enter"]],
         label: "Kategória-fejlécen: a kártya összecsukása / kibontása",
       },
     ],

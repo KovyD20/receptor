@@ -23,6 +23,16 @@ function findRetryDelaySeconds(value) {
   return null;
 }
 
+function findQuotaId(value) {
+  if (!value || typeof value !== "object") return null;
+  if (typeof value.quotaId === "string") return value.quotaId;
+  for (const child of Object.values(value)) {
+    const found = findQuotaId(child);
+    if (found !== null) return found;
+  }
+  return null;
+}
+
 const NETWORK_FAILURE =
   /fetch failed|Request aborted when|The operation was aborted|aborted|terminated|\bUND_ERR_\w+/i;
 const NETWORK_CODE =
@@ -48,8 +58,11 @@ function classifyAiError(err) {
   const status = Number(err?.status);
   if (Number.isFinite(status) && status >= 400) {
     if (status === 429) {
+      const body = parseErrorBody(message);
+      const quotaId = findQuotaId(body);
       return aiError("AI quota exceeded", 429, "AI_QUOTA", {
-        retryAfterSeconds: findRetryDelaySeconds(parseErrorBody(message)),
+        retryAfterSeconds: findRetryDelaySeconds(body),
+        quotaScope: /PerDay/i.test(quotaId || "") ? "daily" : null,
       });
     }
 

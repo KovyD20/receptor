@@ -167,11 +167,43 @@ describe("ItemRow edit toggle", () => {
     );
     const row = container.querySelector(".item-row");
 
-    fireEvent.keyDown(row, { key: "ArrowRight" });
+    fireEvent.keyDown(row, { key: "+" });
     fireEvent.keyDown(row, { key: "Delete" });
 
     expect(onIncrement).toHaveBeenCalledTimes(1);
     expect(onDelete).toHaveBeenCalledTimes(1);
+  });
+
+  it("leaves the left and right arrows to the page navigation", () => {
+    const onIncrement = vi.fn();
+    const onDecrement = vi.fn();
+    const { container } = render(
+      <ItemRow {...editable({ onIncrement, onDecrement })} />,
+    );
+    const row = container.querySelector(".item-row");
+
+    const right = fireEvent.keyDown(row, { key: "ArrowRight" });
+    const left = fireEvent.keyDown(row, { key: "ArrowLeft" });
+
+    expect(onIncrement).not.toHaveBeenCalled();
+    expect(onDecrement).not.toHaveBeenCalled();
+    expect(right).toBe(true);
+    expect(left).toBe(true);
+  });
+
+  it("steps down with '-', and not past the floor", () => {
+    const onDecrement = vi.fn();
+    const { container, rerender } = render(
+      <ItemRow {...editable({ onDecrement })} />,
+    );
+    const row = container.querySelector(".item-row");
+
+    fireEvent.keyDown(row, { key: "-" });
+    expect(onDecrement).toHaveBeenCalledTimes(1);
+
+    rerender(<ItemRow {...editable({ onDecrement, disableDecrement: true })} />);
+    fireEvent.keyDown(container.querySelector(".item-row"), { key: "-" });
+    expect(onDecrement).toHaveBeenCalledTimes(1);
   });
 
   it("edits only the row whose pencil was pressed", () => {
@@ -571,5 +603,136 @@ describe("AddItemRow with catalog suggestions", () => {
       amount: 2,
       unit: "db",
     });
+  });
+});
+
+describe("ItemRow keys inside an open row", () => {
+  const openRow = (props) => {
+    const result = render(
+      <ItemRow
+        {...editable({
+          onAmountChange: vi.fn(),
+          onUnitChange: vi.fn(),
+          onNoteChange: vi.fn(),
+          ...props,
+        })}
+      />,
+    );
+    startEdit();
+    return result;
+  };
+
+  const noteField = () => screen.getByLabelText("Saját megjegyzés");
+
+  it("steps the amount with '+' from the amount field, without typing it", () => {
+    const onIncrement = vi.fn();
+    openRow({ onIncrement });
+
+    fireEvent.keyDown(amountField(), { key: "+" });
+
+    expect(onIncrement).toHaveBeenCalledTimes(1);
+    expect(amountField().value).toBe("2");
+  });
+
+  it("steps the amount from the unit picker and the note as well", () => {
+    const onIncrement = vi.fn();
+    const onDecrement = vi.fn();
+    openRow({ onIncrement, onDecrement });
+
+    fireEvent.keyDown(unitSelect(), { key: "+" });
+    fireEvent.keyDown(noteField(), { key: "-" });
+
+    expect(onIncrement).toHaveBeenCalledTimes(1);
+    expect(onDecrement).toHaveBeenCalledTimes(1);
+  });
+
+  it("respects the floor, wherever the press came from", () => {
+    const onDecrement = vi.fn();
+    openRow({ onDecrement, disableDecrement: true });
+
+    fireEvent.keyDown(unitSelect(), { key: "-" });
+
+    expect(onDecrement).not.toHaveBeenCalled();
+  });
+
+  it("accepts and closes the row on Enter from the unit picker", () => {
+    openRow();
+    expect(unitSelect()).toBeTruthy();
+
+    fireEvent.keyDown(unitSelect(), { key: "Enter" });
+
+    expect(screen.queryByLabelText("Mértékegység")).toBeNull();
+  });
+
+  it("deletes the item on Delete from an open field", () => {
+    const onDelete = vi.fn();
+    openRow({ onDelete });
+
+    fireEvent.keyDown(amountField(), { key: "Delete" });
+
+    expect(onDelete).toHaveBeenCalledTimes(1);
+  });
+
+  it("leaves Backspace to the text being typed", () => {
+    const onDelete = vi.fn();
+    openRow({ onDelete });
+
+    fireEvent.keyDown(noteField(), { key: "Backspace" });
+
+    expect(onDelete).not.toHaveBeenCalled();
+  });
+
+  it("still ignores the amount keys while the row is closed and typed into", () => {
+    const onIncrement = vi.fn();
+    render(<ItemRow {...editable({ onIncrement, onAmountChange: vi.fn() })} />);
+
+    fireEvent.keyDown(document.querySelector(".item-row"), { key: "+" });
+
+    expect(onIncrement).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("AddItemRow amount keys", () => {
+  const amount = () => screen.getByPlaceholderText("menny.");
+
+  it("steps up from empty with '+'", () => {
+    render(<AddItemRow units={["db"]} onAdd={vi.fn()} />);
+
+    fireEvent.keyDown(amount(), { key: "+" });
+
+    expect(amount().value).toBe("1");
+  });
+
+  it("keeps stepping, and never types the character", () => {
+    render(<AddItemRow units={["db"]} onAdd={vi.fn()} />);
+
+    fireEvent.change(amount(), { target: { value: "4" } });
+    fireEvent.keyDown(amount(), { key: "+" });
+    fireEvent.keyDown(amount(), { key: "-" });
+    fireEvent.keyDown(amount(), { key: "-" });
+
+    expect(amount().value).toBe("3");
+  });
+
+  it("empties the field rather than parking it on zero", () => {
+    render(<AddItemRow units={["db"]} onAdd={vi.fn()} />);
+
+    fireEvent.change(amount(), { target: { value: "1" } });
+    fireEvent.keyDown(amount(), { key: "-" });
+
+    expect(amount().value).toBe("");
+  });
+
+  it("still adds the row on Enter", () => {
+    const onAdd = vi.fn();
+    render(<AddItemRow units={["db"]} onAdd={onAdd} />);
+
+    fireEvent.change(screen.getByPlaceholderText("Tétel hozzáadása"), {
+      target: { value: "tej" },
+    });
+    fireEvent.keyDown(amount(), { key: "+" });
+    fireEvent.keyDown(amount(), { key: "Enter" });
+
+    expect(onAdd).toHaveBeenCalledWith({ name: "tej", amount: 1, unit: "db" });
   });
 });

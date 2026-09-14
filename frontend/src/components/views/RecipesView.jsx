@@ -16,8 +16,8 @@ import {
 } from "../../lib/recipes";
 
 const SORT_MODES = [
-  { id: "name", label: "Név szerint" },
   { id: "course", label: "Kategória szerint" },
+  { id: "name", label: "Név szerint" },
   { id: "availability", label: "Ami megvan" },
 ];
 
@@ -55,12 +55,26 @@ function CardMeta({ recipe, availability }) {
   );
 }
 
-function CourseBadge({ recipe }) {
+function CourseBadge({ recipe, ownLimit = 3 }) {
   const course = mainTagOf(recipe);
-  if (!course) return null;
+  const own = (recipe?.tags || [])
+    .filter((tag) => !isMainTag(tag))
+    .slice(0, ownLimit);
+
+  if (!course && own.length === 0) return null;
+
   return (
-    <span className="tag-pill" style={{ "--tag-accent": mainTagColor(course) }}>
-      {course}
+    <span className="recipe-card-tags">
+      {course && (
+        <span className="tag-pill" style={{ "--tag-accent": mainTagColor(course) }}>
+          {course}
+        </span>
+      )}
+      {own.map((tag) => (
+        <span key={tag} className="tag-pill is-own">
+          {tag}
+        </span>
+      ))}
     </span>
   );
 }
@@ -212,7 +226,7 @@ export default function RecipesView({
                 </span>
                 {isMobile && (
                   <>
-                    <CourseBadge recipe={recipe} />
+                    <CourseBadge recipe={recipe} ownLimit={1} />
                     <Icon name="chevronRight" size={12} color="#6a6a6a" />
                   </>
                 )}

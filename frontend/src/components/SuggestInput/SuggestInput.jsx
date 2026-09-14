@@ -39,6 +39,7 @@ export default function SuggestInput({
   onChange,
   onSelect,
   suggest,
+  browse,
   dropUp = false,
   className = "",
   placeholder,
@@ -46,12 +47,13 @@ export default function SuggestInput({
   ...inputProps
 }) {
   const [open, setOpen] = useState(false);
+  const [browsing, setBrowsing] = useState(false);
   const [active, setActive] = useState(-1);
   const listRef = useRef(null);
   const listId = useId();
   const optionId = (index) => `${listId}-${index}`;
 
-  const matches = suggest ? suggest(value) : [];
+  const matches = browsing && browse ? browse() : suggest ? suggest(value) : [];
   const isOpen = open && matches.length > 0;
   const activeMatch = active >= 0 ? matches[active] : null;
 
@@ -72,6 +74,7 @@ export default function SuggestInput({
 
   const close = () => {
     setOpen(false);
+    setBrowsing(false);
     setActive(-1);
   };
 
@@ -94,17 +97,27 @@ export default function SuggestInput({
   const handleKeyDown = (event) => {
     switch (event.key) {
       case "ArrowDown":
+        if (!matches.length) break;
         event.preventDefault();
         move(1);
         break;
       case "ArrowUp":
+        if (!matches.length) break;
         event.preventDefault();
         move(-1);
         break;
       case "Enter":
-        if (!activeMatch) break;
-        event.preventDefault();
-        pick(activeMatch);
+        if (activeMatch) {
+          event.preventDefault();
+          pick(activeMatch);
+          break;
+        }
+        if (browse && !isOpen && !value.trim()) {
+          event.preventDefault();
+          setBrowsing(true);
+          setOpen(true);
+          break;
+        }
         break;
       case "Escape":
         if (!isOpen) break;
@@ -136,6 +149,7 @@ export default function SuggestInput({
         onChange={(event) => {
           onChange(event);
           setOpen(true);
+          setBrowsing(false);
           setActive(-1);
         }}
         onBlur={close}
