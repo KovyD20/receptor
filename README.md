@@ -168,8 +168,8 @@ need a PostgreSQL instance and a Firebase project.
 **1. Clone and install**
 
 ```bash
-git clone https://github.com/KovyD20/Smart-Kitchen-Project.git
-cd Smart-Kitchen-Project
+git clone https://github.com/KovyD20/receptor.git
+cd receptor
 (cd backend && npm install)
 (cd frontend && npm install)
 ```
@@ -359,8 +359,8 @@ updating before they run again. Use the [Getting Started](#getting-started) flow
 Distributed under the MIT License.
 
 <!-- Badge links -->
-[CI-badge]: https://github.com/KovyD20/Smart-Kitchen-Project/actions/workflows/ci.yml/badge.svg
-[CI-url]: https://github.com/KovyD20/Smart-Kitchen-Project/actions/workflows/ci.yml
+[CI-badge]: https://github.com/KovyD20/receptor/actions/workflows/ci.yml/badge.svg
+[CI-url]: https://github.com/KovyD20/receptor/actions/workflows/ci.yml
 [React-badge]: https://img.shields.io/badge/React_19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB
 [React-url]: https://react.dev/
 [Vite-badge]: https://img.shields.io/badge/Vite_7-646CFF?style=for-the-badge&logo=vite&logoColor=white
