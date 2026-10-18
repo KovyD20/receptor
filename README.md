@@ -1,167 +1,166 @@
-# Smart Kitchen
-
-> A full-stack AI-powered kitchen assistant — track what's in your fridge, manage recipes, build a shopping list, and let Gemini suggest what to cook from what you already have.
-
-[![CI][CI-badge]][CI-url]
-[![React][React-badge]][React-url]
-[![Vite][Vite-badge]][Vite-url]
-[![Node.js][Node-badge]][Node-url]
-[![Express][Express-badge]][Express-url]
-[![PostgreSQL][PG-badge]][PG-url]
-[![Firebase][Firebase-badge]][Firebase-url]
-[![Gemini][Gemini-badge]][Gemini-url]
-
----
-
-<p>
-  <img src="images/smartkitchenreceptor.png" alt="Smart Kitchen UI" width="600"/>
+<p align="center">
+  <img src="images/banner.svg" alt="Smart Kitchen: cook from what's already in your fridge" width="100%"/>
 </p>
 
-## Table of Contents
+<p align="center">
+  <a href="https://github.com/KovyD20/receptor/actions/workflows/ci.yml"><img src="https://github.com/KovyD20/receptor/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
+  <img src="https://img.shields.io/badge/tests-801_passing-2ea44f" alt="801 tests passing"/>
+  <img src="https://img.shields.io/badge/React-19-20232A?logo=react&logoColor=61DAFB" alt="React 19"/>
+  <img src="https://img.shields.io/badge/Express-5-000000?logo=express&logoColor=white" alt="Express 5"/>
+  <img src="https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL 16"/>
+  <img src="https://img.shields.io/badge/Firestore-FFCA28?logo=firebase&logoColor=black" alt="Firestore"/>
+  <img src="https://img.shields.io/badge/Gemini-4285F4?logo=google&logoColor=white" alt="Gemini"/>
+  <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT"/>
+</p>
 
-- [About The Project](#about-the-project)
-- [Architecture](#architecture)
-  - [Why two databases](#why-two-databases)
-  - [Built With](#built-with)
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-  - [Running the app](#running-the-app)
-- [Usage](#usage)
-- [API Endpoints](#api-endpoints)
-- [Testing](#testing)
-- [Deployment](#deployment)
-- [Local Docker demo (archived)](#local-docker-demo-archived)
-- [Roadmap](#roadmap)
-- [License](#license)
+**An AI kitchen assistant** that tracks your fridge, scales recipes, builds the shopping
+list and asks Gemini what to cook from what you already have.
 
----
+<!-- Hero GIF (15–20 s): fridge → "what should I cook?" → Gemini recipe → missing items to the list → "Hűtőbe rak".
+<p align="center"><img src="images/demo.gif" alt="Smart Kitchen demo" width="100%"/></p>
+-->
 
-## About The Project
+## Features
 
-Smart Kitchen helps you run a household kitchen: keep an inventory of your fridge, save
-and scale recipes, maintain a shopping list, and use **Google Gemini** to generate
-recipes — either by name, or from the ingredients you actually have.
+<!-- Three phone screenshots (390×844), same recipe on all three:
+<p align="center">
+  <img src="images/fridge.png" alt="Fridge" width="30%"/>
+  <img src="images/recipe.png" alt="Recipe and cook mode" width="30%"/>
+  <img src="images/shopping.png" alt="Shopping list" width="30%"/>
+</p>
+-->
 
-The UI is a single-view, tab-driven app: on desktop the tab bar sits on top, and below
-768px the same five views get a bottom tab bar.
-
-**Features**
-
-- **Fridge inventory** — items grouped automatically into pantry categories, with amount/unit steppers
-- **Recipe manager** — create, edit, tag, filter and search recipes; amounts rescale with the serving count
-- **Cook mode** — step-by-step, large-type view for reading from across the kitchen
-- **Shopping list** — tick items off as you shop, then move the list into the fridge in one action
-- **Unit-aware merging** — adding "2 dl" to an existing "1 l" merges instead of duplicating
-- **Ingredient matching** — a recipe shows what you already have vs. what's missing, then adds the missing items to your list
-- **Pantry catalog** — a curated, aliased, prioritised catalog in PostgreSQL drives categorisation and "you're out of staples" suggestions
-- **AI recipe generation** — by dish name, or restricted to your fridge contents
-- **Firebase Authentication** — email/password or Google sign-in
-
----
+- **Fridge** – items grouped into pantry categories automatically, with amount/unit steppers.
+- **Recipes and cook mode** – amounts rescale with the serving count; cook mode reads step by step from across the kitchen.
+- **Shopping list** – "2 dl" added to "1 l" merges instead of duplicating; one action moves the whole list into the fridge.
+- **AI recipes** – by dish name, from your fridge contents, or imported from any recipe URL (schema.org JSON-LD first, page text as fallback).
+- **Keyboard and images** – every view is keyboard-navigable; recipe photos upload to Firebase Storage as 1200 px WebP.
 
 ## Architecture
 
-<p>
-  <img src="images/architecture.png" alt="Architecture" width="400"/>
-</p>
+```mermaid
+flowchart LR
+    U([User<br/>phone / desktop]) --> SPA
 
+    subgraph Browser["Browser · Vercel"]
+        SPA[React SPA<br/>Vite · Firebase SDK]
+        Auth[Firebase Auth<br/>ID token]
+        FS[(Cloud Firestore<br/>per-user, real-time)]
+        SPA --> Auth
+        SPA --> FS
+    end
+
+    subgraph Server["Server · Render / Neon"]
+        API[Express API<br/>token check · rate limit]
+        AI[Google Gemini<br/>API key only here]
+        PG[(PostgreSQL<br/>pantry catalog)]
+        API --> AI
+        API --> PG
+    end
+
+    SPA -->|Bearer ID token| API
 ```
-React SPA (static)
-   │
-   ├── Firebase Auth ──────────── sign-in, issues ID tokens
-   │
-   ├── Cloud Firestore ────────── per-user data, real-time (onSnapshot)
-   │                              users/{uid}/{recipes,fridge,shoppingList}
-   │
-   └── Express API ────┬───────── POST /api/ai/*      → Google Gemini
-                       │          (Firebase ID token verified, rate limited)
-                       │
-                       └───────── GET  /api/pantry/catalog → PostgreSQL
-```
 
-The browser talks to Firestore **directly** — that is what makes the real-time sync
-work, and access is scoped per user by Firestore security rules. The Express service
-exists for the two things a browser must not do: hold the Gemini API key, and query
-PostgreSQL.
+The browser talks to Firestore **directly**: that is what makes real-time sync work, and
+Firestore security rules scope access per user. The Express service exists for the two
+things a browser must not do: hold the Gemini API key, and query PostgreSQL.
 
-### Why two databases
-
-This is deliberate polyglot persistence, not accident:
-
-| Data | Store | Reason |
+| Data | Store | Why |
 |---|---|---|
-| Fridge, shopping list, saved recipes | **Cloud Firestore** | Private and per-user, wants real-time push (`onSnapshot`) and user-scoped security rules, not relational queries |
-| Pantry catalog (categories, items, aliases, priorities) | **PostgreSQL** | Global, shared, genuinely relational: categories → items → aliases, with uniqueness constraints on normalized keys |
+| Fridge, recipes, shopping list | **Cloud Firestore** | private per user, real-time push (`onSnapshot`), user-scoped rules |
+| Pantry catalog (categories, items, aliases) | **PostgreSQL** | global, shared, relational, unique normalized keys |
 
-The catalog's `normalized_key` columns deserve a note: accent-stripping and
-lowercasing is an *algorithm*, not data. The keys are computed at seed time by
-[`backend/lib/normalize.js`](backend/lib/normalize.js), and incoming runtime text is
-normalized by that **same module** — so stored keys and lookups cannot drift apart.
+The catalog's `normalized_key` columns are computed at seed time by
+[`backend/lib/normalize.js`](backend/lib/normalize.js), and runtime text is normalized by
+that **same module**, so stored keys and lookups cannot drift apart.
 
-### Built With
+## Engineering highlights
+
+| | |
+|---|---|
+| **801** | Vitest tests, all green (backend 192 + frontend 609) |
+| **2** | databases, split on purpose: Firestore for per-user data, PostgreSQL for the shared catalog |
+| **4** | AI endpoints, each validated with `zod` and rate limited per user |
+| **CI** | lint, tests and build for both workspaces on every push and pull request |
+
+## How I built this
+
+I specified the features and the data split myself and used AI assistants for much of the
+implementation, reviewing and refactoring what they produced. The AI layer was rebuilt
+once on `@google/genai` with retries and typed errors, so the UI can say which quota ran
+out instead of failing silently. Recipe import tries the page's schema.org JSON-LD first
+and only falls back to raw page text, and the prompt forbids inventing ingredients that
+are not on the page. Seed-time keys and runtime lookups share one normalization module,
+so they cannot drift apart. The pantry seed upserts by default, and the truncating reset
+is a separate command that prints the target database before it writes.
+
+<details>
+<summary><b>Built with</b></summary>
 
 | Layer | Technology |
 |---|---|
 | Frontend | React 19, Vite 7, Three.js (animated background), Firebase JS SDK |
 | Backend | Node.js 22, Express 5, `pg`, `zod`, `helmet`, `express-rate-limit`, `firebase-admin` |
 | Databases | PostgreSQL 16 (pantry catalog), Cloud Firestore (per-user data) |
-| Auth | Firebase Authentication |
+| Auth and files | Firebase Authentication, Firebase Storage |
 | AI | Google Gemini (`AI_MODEL`, default `gemini-3.6-flash`) via `@google/genai` |
 | Tests / CI | Vitest, GitHub Actions |
 
-Icons are inlined Font Awesome Free SVG paths — no icon webfont is shipped.
+Icons are inlined Font Awesome Free SVG paths; no icon webfont is shipped.
 
----
+</details>
 
-## Getting Started
+<details>
+<summary><b>Getting started</b></summary>
 
-The app runs as **two processes**: the Express API and the Vite dev server. You also
-need a PostgreSQL instance and a Firebase project.
+The app runs as **two processes**: the Express API and the Vite dev server. You also need
+a PostgreSQL instance and a Firebase project.
 
 ### Prerequisites
 
 - **Node.js 22** (or 18+)
-- **PostgreSQL 16** — either installed locally, a Docker container, or a free managed
-  instance ([Neon](https://neon.tech/) / [Supabase](https://supabase.com/))
-- A **Google Gemini API key** — free at [Google AI Studio](https://aistudio.google.com/app/apikey)
-- A **Firebase project** — create one at the [Firebase Console](https://console.firebase.google.com/), then:
-  - **Authentication** → enable *Email/Password* and *Google*
-  - **Firestore Database** → create it, and restrict access to the signed-in owner:
+- **PostgreSQL 16**: local, a Docker container, or a free managed instance
+  ([Neon](https://neon.tech/) / [Supabase](https://supabase.com/))
+- A **Google Gemini API key**, free at [Google AI Studio](https://aistudio.google.com/app/apikey)
+- A **Firebase project** from the [Firebase Console](https://console.firebase.google.com/) with
+  - **Authentication**: *Email/Password* and *Google* enabled
+  - **Firestore** and **Storage** created, restricted to the signed-in owner (rules below)
+  - **Project Settings → Service accounts → Generate new private key**, so the backend can verify ID tokens
 
-    ```
-    rules_version = '2';
-    service cloud.firestore {
-      match /databases/{database}/documents {
-        match /users/{uid}/{document=**} {
-          allow read, write: if request.auth != null && request.auth.uid == uid;
-        }
-      }
+<details>
+<summary>Firestore and Storage security rules</summary>
+
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
     }
-    ```
+  }
+}
+```
 
-  - **Storage** → enable it (recipe images live here), and restrict it the same way.
-    The size cap is the second line of defence: the client already re-encodes every
-    picked image to WebP at 1200px, which puts a phone photo well under 2 MB.
+The Storage size cap is the second line of defence: the client already re-encodes every
+picked image to WebP at 1200 px, which puts a phone photo well under 2 MB.
 
-    ```
-    rules_version = '2';
-    service firebase.storage {
-      match /b/{bucket}/o {
-        match /recipes/{uid}/{allPaths=**} {
-          allow read: if request.auth != null && request.auth.uid == uid;
-          allow write: if request.auth != null
-                       && request.auth.uid == uid
-                       && request.resource.size < 2 * 1024 * 1024
-                       && request.resource.contentType.matches('image/.*');
-          allow delete: if request.auth != null && request.auth.uid == uid;
-        }
-      }
+```
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /recipes/{uid}/{allPaths=**} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if request.auth != null
+                   && request.auth.uid == uid
+                   && request.resource.size < 2 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+      allow delete: if request.auth != null && request.auth.uid == uid;
     }
-    ```
+  }
+}
+```
 
-  - **Project Settings → Service accounts → Generate new private key** — the backend
-    needs this to verify ID tokens
+</details>
 
 ### Installation
 
@@ -180,13 +179,11 @@ cd receptor
 cp backend/.env.example backend/.env
 ```
 
-Fill in `backend/.env`: your PostgreSQL connection, `GEMINI_API_KEY`, and the three
-`FIREBASE_*` values from the service-account JSON. Every variable is documented inline
-in the example file.
+Fill in the PostgreSQL connection, `GEMINI_API_KEY`, and the three `FIREBASE_*` values from
+the service-account JSON. Every variable is documented inline in the example file.
 
-> The Gemini key lives **only** here. It must never reach the frontend — that bundle is
-> public, and anyone could lift the key and burn your quota. This is the main reason a
-> separate backend exists at all.
+> The Gemini key lives **only** here. The frontend bundle is public, so a key there could be
+> lifted and your quota burned. This is the main reason a separate backend exists at all.
 
 **3. Configure the frontend**
 
@@ -194,11 +191,9 @@ in the example file.
 cp frontend/.env.local.example frontend/.env.local
 ```
 
-Fill in the `VITE_FIREBASE_*` values from Firebase Console → Project Settings → Your
-apps. `VITE_FIREBASE_STORAGE_BUCKET` has to be present for recipe-image upload to
-work; without it the app runs but every upload fails. Leave `VITE_API_BASE_URL`
-**empty** for local development — Vite's dev proxy
-forwards `/api` to `localhost:3000`.
+Fill in the `VITE_FIREBASE_*` values from Firebase Console → Project Settings → Your apps.
+Without `VITE_FIREBASE_STORAGE_BUCKET` the app runs but every image upload fails. Leave
+`VITE_API_BASE_URL` **empty** locally: Vite's dev proxy forwards `/api` to `localhost:3000`.
 
 **4. Create and seed the pantry catalog**
 
@@ -207,123 +202,92 @@ cd backend
 npm run db:setup     # applies db/schema.sql, then seeds the catalog
 ```
 
-`npm run migrate` and `npm run seed` can also be run separately, and both are safe
-to re-apply: the schema is idempotent, and seeding **upserts** — it adds and updates
-rows from `scripts/pantrySeedData.js` without deleting anything.
-
-To make the catalog match the seed data exactly (dropping rows that are no longer in
-it), use `npm run seed:reset`, which **truncates the catalog tables** first. That is
-the destructive one, so it is a separate command rather than a default. Both modes
-print the target host, port and database before writing — check that line, because
-these scripts write to whatever `DB_*` points at, including a deployed database.
+`npm run migrate` and `npm run seed` can also run separately and are safe to re-apply: the
+schema is idempotent and seeding **upserts**. `npm run seed:reset` **truncates the catalog
+tables** first, to match the seed data exactly. Both modes print the target host, port and
+database before writing, so check that line: they write to whatever `DB_*` points at.
 
 ### Running the app
 
-Two terminals:
-
 ```bash
-# Terminal 1 — API on :3000
+# Terminal 1: API on :3000
 cd backend && npm run dev
 
-# Terminal 2 — SPA on :5173
+# Terminal 2: SPA on :5173
 cd frontend && npm run dev
 ```
 
-Open **http://localhost:5173**.
+Open **http://localhost:5173**, sign in, and use the five tabs: **Receptek** (browse),
+**Recept** (selected recipe, servings, cook mode), **Bevásárlólista**, **Hűtő** and
+**Új recept** (by hand, by AI, or from a URL). The header search covers recipes and list
+items and is accent-insensitive: `turos` finds *Túrós csusza*.
 
----
+</details>
 
-## Usage
-
-Sign in with email/password or Google, then work through the five tabs:
-
-- **Receptek** — browse, search and filter recipes by tag
-- **Recept** — the selected recipe: ingredients, steps, and what's already in your
-  fridge. Adjust servings to rescale amounts, push missing items to the shopping list,
-  or start **Főzés mód** (step-by-step cook mode; arrow keys and `Esc` work)
-- **Bevásárlólista** — grouped by pantry category; tick items off, then "Hűtőbe rak"
-  moves the whole list into the fridge, merging units as it goes
-- **Hűtő** — your inventory, same grouped layout
-- **Új recept** — enter a recipe by hand, or have Gemini generate one by name or from
-  your fridge contents, then save it to your own recipes
-
-The search box in the header spans recipes (name, tags, ingredients) as well as
-shopping-list and fridge item names, and is accent-insensitive — `turos` finds
-*Túrós csusza*.
-
----
-
-## API Endpoints
+<details>
+<summary><b>API endpoints</b></summary>
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| `GET` | `/health` | — | Liveness probe; returns `INSTANCE_NAME`. No DB access |
-| `GET` | `/api/db/health` | — | Readiness probe; confirms PostgreSQL connectivity |
-| `GET` | `/api/pantry/catalog` | — | Full pantry catalog (categories → items → aliases) |
+| `GET` | `/health` | – | Liveness probe; returns `INSTANCE_NAME`, no DB access |
+| `GET` | `/api/db/health` | – | Readiness probe; confirms PostgreSQL connectivity |
+| `GET` | `/api/pantry/catalog` | – | Full pantry catalog (categories → items → aliases) |
 | `POST` | `/api/ai/recipe-by-name` | Bearer | Generate a recipe from a dish name |
 | `POST` | `/api/ai/suggest-from-fridge` | Bearer | Suggest dish ideas from fridge contents |
 | `POST` | `/api/ai/recipe-from-fridge` | Bearer | Generate a full recipe restricted to fridge contents |
+| `POST` | `/api/ai/recipe-from-url` | Bearer | Import a recipe from a web page (JSON-LD, else page text) |
 
-`Bearer` means a Firebase ID token in `Authorization: Bearer <token>`; those routes are
-also rate limited to **20 requests per 15 minutes per user**. Request bodies are
-validated with `zod`. Recipe, fridge and shopping-list CRUD is **not** here — the client
-does that against Firestore directly.
+`Bearer` means a Firebase ID token in `Authorization: Bearer <token>`. These routes are
+rate limited to **20 requests per 15 minutes per user**, and request bodies are validated
+with `zod`. Recipe, fridge and shopping-list CRUD is **not** here: the client does that
+against Firestore directly. `restclient-test.http` has ready-made requests for the VS Code
+REST Client extension.
 
-`restclient-test.http` has ready-made requests for the VS Code REST Client extension.
+</details>
 
----
-
-## Testing
+<details>
+<summary><b>Testing</b></summary>
 
 ```bash
-cd backend  && npm test        # unit tests: normalize, AI JSON handling
-cd frontend && npm test        # unit tests: unit conversion, catalog grouping
+cd backend  && npm test        # 192 tests
+cd frontend && npm test        # 609 tests
 cd frontend && npm run lint
 ```
 
-Coverage focuses on the real business logic — unit conversion and merging, catalog
-normalisation and alias resolution, and Gemini error/JSON handling — rather than a
-coverage percentage. [GitHub Actions][CI-url] runs lint, tests and build for both
-workspaces on every push and pull request to `master`.
+Coverage focuses on the real business logic (unit conversion and merging, catalog
+normalization and alias resolution, recipe import, Gemini error and JSON handling)
+rather than a coverage percentage. [GitHub Actions](https://github.com/KovyD20/receptor/actions/workflows/ci.yml)
+runs lint, tests and build for both workspaces on every push and pull request to `master`.
 
----
+</details>
 
-## Deployment
+<details>
+<summary><b>Deployment</b></summary>
 
-The frontend is a static bundle and the backend is a small Node service, so they deploy
-to different hosts. All free tier, all auto-deploy on push:
+All free tier, all auto-deploy on push:
 
 | Part | Host | Config in repo |
 |---|---|---|
 | Frontend (React build) | **Vercel** | [`frontend/vercel.json`](frontend/vercel.json) |
 | Backend (Express) | **Render** | [`render.yaml`](render.yaml) blueprint |
 | PostgreSQL (pantry catalog) | **Neon** | connection string → `DB_*` vars |
-| Auth + per-user data | **Firebase** | free tier |
+| Auth, per-user data, images | **Firebase** | free tier |
 
-**➡️ [Full step-by-step guide: DEPLOY.md](DEPLOY.md)** — registration, every setting,
-every environment variable, and troubleshooting.
+Point Render at the repo and it creates the service from `render.yaml`, prompting once for
+the values marked `sync: false`, so no secret is committed.
 
-The backend is described entirely by a committed blueprint: point Render at the repo and
-it creates the service from `render.yaml`, prompting once for the values marked
-`sync: false` so no secret is committed.
+Render's free tier spins the service down after 15 idle minutes and takes 30–60 s to wake.
+That only delays the catalog fetch and the first AI call; sign-in and your own data go
+straight to Firebase. A 10-minute keep-warm ping to `/health` removes the delay.
 
-**Free-tier caveat:** Render spins the service down after 15 minutes idle and takes
-30–60 s to wake. That only affects the catalog fetch and the first AI call — Auth and
-Firestore are hit directly from the browser, so sign-in and your own data are always
-instant — but a 10-minute keep-warm ping to `/health` removes it entirely. DEPLOY.md
-covers the setup.
+</details>
 
-**What is NOT deployed:** the Docker Compose + Nginx load-balancer setup below. Managed
-hosts do their own routing and scaling; pushing a hand-rolled reverse proxy alongside
-would be pointless.
+<details>
+<summary><b>Local Docker demo (archived)</b></summary>
 
----
-
-## Local Docker demo (archived)
-
-An earlier iteration ran the whole stack in Docker Compose — Nginx as reverse proxy and
-round-robin load balancer over **two** backend replicas, plus a PostgreSQL container.
-It is kept in [`archive/`](archive/) as a self-contained infrastructure demo:
+An earlier iteration ran the whole stack in Docker Compose: Nginx as reverse proxy and
+round-robin load balancer over **two** backend replicas, plus a PostgreSQL container. It is
+kept in [`archive/`](archive/) as a self-contained infrastructure demo:
 
 ```
 archive/
@@ -334,44 +298,22 @@ archive/
 └── scripts/                     # logs, restart, in-container helpers
 ```
 
-Because both replicas report their own `INSTANCE_NAME` from `/api/db/health`, hitting
-that endpoint repeatedly shows Nginx round-robining between them.
+Both replicas report their own `INSTANCE_NAME` from `/api/db/health`, so hitting it
+repeatedly shows Nginx round-robining between them. **This is not the current way to run
+the app**: it predates the Firestore/PostgreSQL split, so the compose files need updating
+before they run again.
 
-**This is not the current way to run the app** — it predates the Firestore/PostgreSQL
-split and the environment layout described above, so the compose files would need
-updating before they run again. Use the [Getting Started](#getting-started) flow instead.
-
----
+</details>
 
 ## Roadmap
 
-- [ ] Public recipe library as a second PostgreSQL domain — browsable without signing
-      in, with likes and Postgres full-text search over names and ingredients
+- [ ] Public recipe library as a second PostgreSQL domain, browsable without signing in,
+      with likes and full-text search over names and ingredients
 - [ ] Live public demo link
 - [ ] Expiry-date tracking for fridge items
 - [ ] Component-level frontend tests (Testing Library)
 - [ ] Backend integration tests against a Postgres service container in CI
 
----
-
 ## License
 
 Distributed under the MIT License.
-
-<!-- Badge links -->
-[CI-badge]: https://github.com/KovyD20/receptor/actions/workflows/ci.yml/badge.svg
-[CI-url]: https://github.com/KovyD20/receptor/actions/workflows/ci.yml
-[React-badge]: https://img.shields.io/badge/React_19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB
-[React-url]: https://react.dev/
-[Vite-badge]: https://img.shields.io/badge/Vite_7-646CFF?style=for-the-badge&logo=vite&logoColor=white
-[Vite-url]: https://vite.dev/
-[Node-badge]: https://img.shields.io/badge/Node.js_22-339933?style=for-the-badge&logo=nodedotjs&logoColor=white
-[Node-url]: https://nodejs.org/
-[Express-badge]: https://img.shields.io/badge/Express_5-000000?style=for-the-badge&logo=express&logoColor=white
-[Express-url]: https://expressjs.com/
-[PG-badge]: https://img.shields.io/badge/PostgreSQL_16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white
-[PG-url]: https://www.postgresql.org/
-[Firebase-badge]: https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black
-[Firebase-url]: https://firebase.google.com/
-[Gemini-badge]: https://img.shields.io/badge/Google_Gemini-4285F4?style=for-the-badge&logo=google&logoColor=white
-[Gemini-url]: https://ai.google.dev/
