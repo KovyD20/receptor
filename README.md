@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="images/banner.svg" alt="Smart Kitchen: cook from what's already in your fridge" width="100%"/>
+  <img src="images/banner.jpg" alt="ReceptOR: Recept Operációs Rendszer, cook from what's already in your fridge" width="100%"/>
 </p>
 
 <p align="center">
