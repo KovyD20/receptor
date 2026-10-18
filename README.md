@@ -9,6 +9,7 @@
   <img src="https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL 16"/>
   <img src="https://img.shields.io/badge/Firestore-FFCA28?logo=firebase&logoColor=black" alt="Firestore"/>
   <img src="https://img.shields.io/badge/Gemini-4285F4?logo=google&logoColor=white" alt="Gemini"/>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license"/></a>
 </p>
 
 **An AI kitchen assistant** that tracks your fridge, scales recipes, builds the shopping
@@ -314,3 +315,7 @@ The project grew in objectives; each row links the commits that closed it.
 - [ ] **Expiry dates**: an automatic expected expiry per product, editable by hand
 - [ ] Live public demo
 - [ ] Backend route tests for validation, auth and error codes
+
+## License
+
+[MIT](LICENSE)
