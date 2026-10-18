@@ -95,7 +95,7 @@ so a drift between the two fails CI.
 | | |
 |---|---|
 | **2** | databases, split on purpose: Firestore for per-user data, PostgreSQL for the shared catalog |
-| **4** | AI endpoints, input validated with `zod` and rate limited per user |
+| **4** | AI endpoints, input and model output validated with `zod`, rate limited per user |
 | **CI** | Vitest on both sides, frontend lint and build, on every push and pull request |
 
 ## How I built this
@@ -114,7 +114,7 @@ is a separate command that prints the target database before it writes.
 
 | Layer | Technology |
 |---|---|
-| Frontend | React 19, Vite 7, Three.js (animated background), Firebase JS SDK |
+| Frontend | React 19, Vite 7, Three.js background ([Light Pillar](https://reactbits.dev) from React Bits), Firebase JS SDK |
 | Backend | Node.js 22, Express 5, `pg`, `zod`, `helmet`, `express-rate-limit`, `firebase-admin` |
 | Databases | PostgreSQL 16 (pantry catalog), Cloud Firestore (per-user data) |
 | Auth and files | Firebase Authentication, Firebase Storage |
@@ -133,49 +133,19 @@ a PostgreSQL instance and a Firebase project.
 
 ### Prerequisites
 
-- **Node.js 22** (or 18+)
+- **Node.js 22** (or 20+)
 - **PostgreSQL 16**: local, a Docker container, or a free managed instance
   ([Neon](https://neon.tech/) / [Supabase](https://supabase.com/))
 - A **Google Gemini API key**, free at [Google AI Studio](https://aistudio.google.com/app/apikey)
 - A **Firebase project** from the [Firebase Console](https://console.firebase.google.com/) with
   - **Authentication**: *Email/Password* and *Google* enabled
-  - **Firestore** and **Storage** created, restricted to the signed-in owner (rules below)
+  - **Firestore** and **Storage** created, restricted to the signed-in owner (rules below the list)
   - **Project Settings → Service accounts → Generate new private key**, so the backend can verify ID tokens
 
-<details>
-<summary>Firestore and Storage security rules</summary>
-
-```
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /users/{uid}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
-    }
-  }
-}
-```
-
-The Storage size cap is the second line of defence: the client already re-encodes every
-picked image to WebP at 1200 px, which puts a phone photo well under 2 MB.
-
-```
-rules_version = '2';
-service firebase.storage {
-  match /b/{bucket}/o {
-    match /recipes/{uid}/{allPaths=**} {
-      allow read: if request.auth != null && request.auth.uid == uid;
-      allow write: if request.auth != null
-                   && request.auth.uid == uid
-                   && request.resource.size < 2 * 1024 * 1024
-                   && request.resource.contentType.matches('image/.*');
-      allow delete: if request.auth != null && request.auth.uid == uid;
-    }
-  }
-}
-```
-
-</details>
+The security rules live in [`firestore.rules`](firestore.rules) and
+[`storage.rules`](storage.rules): every document and image is readable and writable only
+by its owner, and uploads are capped at 2 MB of `image/*`. Paste them into the console, or
+deploy them with `firebase deploy --only firestore:rules,storage`.
 
 ### Installation
 

@@ -33,14 +33,14 @@ describe("bestInDirection: the desktop top bar", () => {
 
   it("walks along the tab bar instead of jumping up to the search field", () => {
     const list = [search(), help(), ...tabs()];
-    const lista = list.find((el) => el.textContent === "Bevásárlólista");
-    expect(name(bestInDirection(lista, "right", list))).toBe("Hűtő");
+    const shoppingTab = list.find((el) => el.textContent === "Bevásárlólista");
+    expect(name(bestInDirection(shoppingTab, "right", list))).toBe("Hűtő");
   });
 
   it("reaches the last tab", () => {
     const list = [search(), help(), ...tabs()];
-    const huto = list.find((el) => el.textContent === "Hűtő");
-    expect(name(bestInDirection(huto, "right", list))).toBe("Új recept");
+    const fridgeTab = list.find((el) => el.textContent === "Hűtő");
+    expect(name(bestInDirection(fridgeTab, "right", list))).toBe("Új recept");
   });
 
   it("stops at the end of the row rather than leaving it sideways", () => {
@@ -51,8 +51,8 @@ describe("bestInDirection: the desktop top bar", () => {
 
   it("goes up to the search field only when asked to go up", () => {
     const list = [search(), help(), ...tabs()];
-    const lista = list.find((el) => el.textContent === "Bevásárlólista");
-    expect(name(bestInDirection(lista, "up", list))).toBe("Keresés");
+    const shoppingTab = list.find((el) => el.textContent === "Bevásárlólista");
+    expect(name(bestInDirection(shoppingTab, "up", list))).toBe("Keresés");
   });
 
   it("moves along the row the search field is in", () => {

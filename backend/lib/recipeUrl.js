@@ -13,8 +13,46 @@ const ALLOWED_CONTENT_TYPES = ["text/html", "application/xhtml+xml"];
 
 const PRIVATE_HOSTNAMES = /^(localhost|.*\.local|.*\.internal|.*\.localhost)$/i;
 
-const PRIVATE_IPV4 =
-  /^(0|10|127)\.|^169\.254\.|^172\.(1[6-9]|2\d|3[01])\.|^192\.168\./;
+const ALLOWED_PORTS = new Set(["", "80", "443"]);
+
+// Everything that is not ordinary public unicast: private, loopback, link-local,
+// CGNAT, benchmarking, documentation, multicast, reserved, and the IPv6 ranges that
+// tunnel to an arbitrary IPv4 address (NAT64, 6to4, IPv4-compatible).
+const BLOCKED = new net.BlockList();
+for (const [prefix, bits] of [
+  ["0.0.0.0", 8],
+  ["10.0.0.0", 8],
+  ["100.64.0.0", 10],
+  ["127.0.0.0", 8],
+  ["169.254.0.0", 16],
+  ["172.16.0.0", 12],
+  ["192.0.0.0", 24],
+  ["192.0.2.0", 24],
+  ["192.168.0.0", 16],
+  ["198.18.0.0", 15],
+  ["198.51.100.0", 24],
+  ["203.0.113.0", 24],
+  ["224.0.0.0", 4],
+  ["240.0.0.0", 4],
+]) {
+  BLOCKED.addSubnet(prefix, bits, "ipv4");
+}
+for (const [prefix, bits] of [
+  ["::", 96],
+  ["64:ff9b::", 96],
+  ["100::", 64],
+  ["2001:db8::", 32],
+  ["2002::", 16],
+  ["fc00::", 7],
+  ["fe80::", 10],
+  ["ff00::", 8],
+]) {
+  BLOCKED.addSubnet(prefix, bits, "ipv6");
+}
+
+function isBlockedIpv4(ip) {
+  return BLOCKED.check(ip, "ipv4");
+}
 
 function urlError(message, code, status = 400) {
   const err = new Error(message);
@@ -30,21 +68,18 @@ function blockedAddressError() {
 function isPrivateAddress(address) {
   const ip = String(address).replace(/^\[|\]$/g, "").toLowerCase();
 
-  if (net.isIPv4(ip)) return PRIVATE_IPV4.test(ip);
+  if (net.isIPv4(ip)) return isBlockedIpv4(ip);
 
   if (net.isIPv6(ip)) {
-    if (ip === "::1" || ip === "::") return true;
-    if (/^f[cd][0-9a-f]{2}:/.test(ip)) return true;
-    if (/^fe[89ab][0-9a-f]:/.test(ip)) return true;
     const dotted = ip.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
-    if (dotted) return PRIVATE_IPV4.test(dotted[1]);
+    if (dotted) return isBlockedIpv4(dotted[1]);
     const hex = ip.match(/^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
     if (hex) {
       const high = parseInt(hex[1], 16);
       const low = parseInt(hex[2], 16);
-      return PRIVATE_IPV4.test([high >> 8, high & 255, low >> 8, low & 255].join("."));
+      return isBlockedIpv4([high >> 8, high & 255, low >> 8, low & 255].join("."));
     }
-    return false;
+    return BLOCKED.check(ip, "ipv6");
   }
 
   return false;
@@ -93,6 +128,10 @@ function assertPublicUrl(raw, { allowLoopback = false } = {}) {
     throw blockedAddressError();
   }
 
+  if (!allowLoopback && !ALLOWED_PORTS.has(url.port)) {
+    throw blockedAddressError();
+  }
+
   return url;
 }
 
@@ -134,7 +173,7 @@ function requestOnce(url, deadline, allowLoopback) {
         method: "GET",
         lookup: makeGuardedLookup(allowLoopback),
         headers: {
-          "User-Agent": "SmartKitchen/1.0 (recipe import; +https://github.com/)",
+          "User-Agent": "SmartKitchen/1.0 (recipe import; +https://github.com/KovyD20/receptor)",
           Accept: "text/html,application/xhtml+xml",
           "Accept-Language": "hu,en;q=0.8",
           "Accept-Encoding": "gzip, deflate, br",

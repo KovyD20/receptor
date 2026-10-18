@@ -4,6 +4,8 @@ import { auth } from "../firebase";
 
 import LightPillar from "../components/Background/LightPillar";
 import Icon from "../components/Icon/Icon";
+import TopBar from "../components/AppShell/TopBar";
+import BottomTabBar from "../components/AppShell/BottomTabBar";
 import RecipesView from "../components/views/RecipesView";
 import RecipeView from "../components/views/RecipeView";
 import ShoppingView from "../components/views/ShoppingView";
@@ -14,7 +16,13 @@ import NewRecipeForm from "../components/NewRecipeForm/NewRecipeForm";
 import LoadingBanner from "../components/LoadingBanner/LoadingBanner";
 import ShortcutsHelp from "../components/ShortcutsHelp/ShortcutsHelp";
 
-import "./Home.css";
+import "./home/shell.css";
+import "./home/layout.css";
+import "./home/recipe.css";
+import "./home/lists.css";
+import "./home/forms.css";
+import "./home/cook-mode.css";
+import "./home/responsive.css";
 import { SYSTEM_UNITS } from "../constants/units";
 import { useRecipes } from "../hooks/useRecipes";
 import { useInventory } from "../hooks/useInventory";
@@ -23,6 +31,7 @@ import { useGlobalKeys } from "../hooks/useGlobalKeys";
 import { useSpatialNav } from "../hooks/useSpatialNav";
 import { isTypingTarget } from "../lib/keyboard";
 import { useCategoryColors } from "../hooks/useCategoryColors";
+import { TAB_IDS } from "../constants/tabs";
 import { useCatalog } from "../context/CatalogContext";
 import { useToast } from "../context/ToastContext";
 import { useConfirm } from "../context/ConfirmContext";
@@ -35,44 +44,6 @@ import {
   sortByCourse,
 } from "../lib/recipes";
 
-const TABS = [
-  {
-    id: "receptek",
-    label: "Receptek",
-    shortLabel: "Receptek",
-    icon: "book",
-    accent: "var(--brand-bright)",
-  },
-  {
-    id: "recept",
-    label: "Recept",
-    shortLabel: "Recept",
-    icon: "utensils",
-    accent: "var(--orange)",
-  },
-  {
-    id: "lista",
-    label: "Bevásárlólista",
-    shortLabel: "Lista",
-    icon: "cart",
-    accent: "var(--yellow)",
-  },
-  {
-    id: "huto",
-    label: "Hűtő",
-    shortLabel: "Hűtő",
-    icon: "snowflake",
-    accent: "var(--blue)",
-  },
-  {
-    id: "uj",
-    label: "Új recept",
-    shortLabel: "Új",
-    icon: "wand",
-    accent: "var(--brand-bright)",
-  },
-];
-
 function filterGroups(groups, search) {
   if (!search) return groups;
   return groups
@@ -82,16 +53,6 @@ function filterGroups(groups, search) {
     }))
     .filter((group) => group.items.length > 0);
 }
-
-const TAB_IDS = TABS.map((t) => t.id);
-
-const SCREEN_TITLES = {
-  receptek: "Receptek",
-  recept: "Recept",
-  lista: "Bevásárlólista",
-  huto: "Hűtő",
-  uj: "Új recept",
-};
 
 export default function Home({ user }) {
   const {
@@ -323,6 +284,9 @@ export default function Home({ user }) {
       notifyError(err, "A lista ürítése sikertelen");
     }
   };
+
+  const signOutUser = () =>
+    signOut(auth).catch((err) => notifyError(err, "Kijelentkezés sikertelen"));
 
   const focusSearch = () => {
     if (!isMobile || tab === "receptek") {
@@ -651,124 +615,24 @@ export default function Home({ user }) {
         <LightPillar />
       </div>
 
-      <header className="topbar">
-        <div className="topbar-main">
-          <div className="brand">
-            <div className="brand-mark">R</div>
-            <div className="brand-name">
-              {isMobile ? SCREEN_TITLES[tab] : "Recept Operációs Rendszer"}
-            </div>
-          </div>
-
-          {isMobile ? (
-            <>
-              <div className="view-spacer" />
-              <button
-                type="button"
-                className="icon-btn topbar-icon"
-                aria-label="Keresés"
-                aria-expanded={searchOpen}
-                onClick={() => setSearchOpen((prev) => !prev)}
-              >
-                <Icon name="search" size={14} />
-              </button>
-              <button
-                type="button"
-                className="topbar-avatar"
-                title={`${user?.email || ""} — kijelentkezés`}
-                aria-label="Kijelentkezés"
-                onClick={async () => {
-                  if (!(await confirm("Kijelentkezel?"))) return;
-                  signOut(auth).catch((err) =>
-                    notifyError(err, "Kijelentkezés sikertelen"),
-                  );
-                }}
-              >
-                {(user?.email || "?").charAt(0).toUpperCase()}
-              </button>
-            </>
-          ) : (
-            <>
-              <div className="topbar-search">
-                <div className="search-box">
-                  <Icon name="search" size={13} color="#7a7a7a" />
-                  <input
-                    ref={searchInputRef}
-                    placeholder="Keresés receptek, hozzávalók, hűtő…"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="topbar-user">
-                <button
-                  type="button"
-                  className="icon-btn topbar-icon topbar-help"
-                  aria-label="Gyorsbillentyűk"
-                  title="Gyorsbillentyűk (?)"
-                  onClick={() => setHelpOpen(true)}
-                >
-                  ?
-                </button>
-                <span className="topbar-email">
-                  {user?.email || "Ismeretlen email"}
-                </span>
-                <button
-                  type="button"
-                  className="btn-pill btn-outline"
-                  style={{ "--accent": "var(--brand-bright)" }}
-                  onClick={() =>
-                    signOut(auth).catch((err) =>
-                      notifyError(err, "Kijelentkezés sikertelen"),
-                    )
-                  }
-                >
-                  Kijelentkezés
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-
-        {isMobile && searchOpen && (
-          <div className="topbar-search-mobile">
-            <div className="search-box">
-              <Icon name="search" size={13} color="#7a7a7a" />
-              <input
-                autoFocus
-                placeholder="Keresés receptek, hozzávalók, hűtő…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-          </div>
-        )}
-
-        {!isMobile && (
-          <nav className="tabbar-top" aria-label="Fő menü">
-            <div className="tabbar-top-inner">
-              {TABS.map((t) => {
-                const badge = badgeFor(t.id);
-                return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    className={`tab-top${tab === t.id ? " is-active" : ""}`}
-                    style={{ "--accent": t.accent }}
-                    aria-current={tab === t.id}
-                    data-nav-home={tab === t.id ? "" : undefined}
-                    onClick={() => goToTab(t.id)}
-                  >
-                    <Icon name={t.icon} size={14} />
-                    {t.label}
-                    {badge !== null && <span className="tab-badge">{badge}</span>}
-                  </button>
-                );
-              })}
-            </div>
-          </nav>
-        )}
-      </header>
+      <TopBar
+        user={user}
+        isMobile={isMobile}
+        tab={tab}
+        search={search}
+        onSearchChange={setSearch}
+        searchOpen={searchOpen}
+        onToggleSearch={() => setSearchOpen((prev) => !prev)}
+        searchInputRef={searchInputRef}
+        onOpenHelp={() => setHelpOpen(true)}
+        onSignOut={signOutUser}
+        onSignOutWithConfirm={async () => {
+          if (!(await confirm("Kijelentkezel?"))) return;
+          signOutUser();
+        }}
+        badgeFor={badgeFor}
+        onSelectTab={goToTab}
+      />
 
       <LoadingBanner
         loading={dataLoading}
@@ -779,28 +643,7 @@ export default function Home({ user }) {
       <main className="app-main">{renderTab()}</main>
 
       {isMobile && (
-        <nav className="tabbar-bottom" aria-label="Fő menü">
-          {TABS.map((t) => {
-            const badge = badgeFor(t.id);
-            return (
-              <button
-                key={t.id}
-                type="button"
-                className={`tab-bottom${tab === t.id ? " is-active" : ""}`}
-                style={{ "--accent": t.accent }}
-                aria-current={tab === t.id}
-                data-nav-home={tab === t.id ? "" : undefined}
-                onClick={() => goToTab(t.id)}
-              >
-                <span className="tab-bottom-icon">
-                  <Icon name={t.icon} size={19} />
-                  {badge !== null && <span className="tab-badge">{badge}</span>}
-                </span>
-                <span className="tab-bottom-label">{t.shortLabel}</span>
-              </button>
-            );
-          })}
-        </nav>
+        <BottomTabBar tab={tab} badgeFor={badgeFor} onSelectTab={goToTab} />
       )}
 
       {helpOpen && <ShortcutsHelp onClose={() => setHelpOpen(false)} />}

@@ -13,7 +13,6 @@ backend/dist/
 backend/.env
 frontend/.env.local
 
-
 # Logs
 *.log
 npm-debug.log*
@@ -27,13 +26,5 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Local-only working notes: Hungarian planning docs kept in sync with the
-# English docs by hand, plus scratch copies. Nothing in here belongs on GitHub.
-.local_directory/
-
-# Throwaway git worktrees used for isolated work; each holds a full checkout.
-
-REFACTOR_TERV.md
-IMPROVE_TERV.md
-# Playwright MCP scratch output (page snapshots, console logs).
+# Tool output
 .playwright-mcp/

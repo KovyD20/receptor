@@ -80,6 +80,22 @@ describe("isPrivateAddress", () => {
     }
   });
 
+  it("recognizes the non-private ranges that still are not the public internet", () => {
+    for (const ip of [
+      "100.64.0.1",
+      "198.18.0.1",
+      "192.0.2.1",
+      "224.0.0.1",
+      "255.255.255.255",
+      "64:ff9b::a00:1",
+      "2002:a00:1::1",
+      "::a00:1",
+      "ff02::1",
+    ]) {
+      expect(isPrivateAddress(ip), ip).toBe(true);
+    }
+  });
+
   it("leaves public IPv6 alone", () => {
     for (const ip of ["2001:4860:4860::8888", "::ffff:8.8.8.8"]) {
       expect(isPrivateAddress(ip), ip).toBe(false);
@@ -101,6 +117,12 @@ describe("assertPublicUrl", () => {
 
   it("rejects garbage that is not a URL at all", () => {
     expect(() => assertPublicUrl("not a url")).toThrow();
+  });
+
+  it("rejects ports other than 80 and 443", () => {
+    expect(() => assertPublicUrl("http://example.com:8080/")).toThrow();
+    expect(() => assertPublicUrl("https://example.com:22/")).toThrow();
+    expect(assertPublicUrl("https://example.com:443/").hostname).toBe("example.com");
   });
 
   it("rejects literal private addresses and local names", () => {

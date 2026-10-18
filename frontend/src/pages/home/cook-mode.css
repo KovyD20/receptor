@@ -1,0 +1,205 @@
+.cook-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  background: rgba(8, 6, 5, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 50px;
+}
+
+.cook-modal {
+  width: 1040px;
+  max-width: 100%;
+  border-radius: 20px;
+  background: #161312;
+  border: 1px solid #3a2f2a;
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.7);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 100%;
+}
+
+.cook-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 28px;
+  border-bottom: 1px solid var(--line-bar);
+  flex: none;
+}
+
+.cook-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cook-counter {
+  font-family: var(--font-display);
+  font-variant: all-small-caps;
+  letter-spacing: 1.4px;
+  font-size: 17px;
+  color: var(--orange);
+  flex: none;
+}
+
+.cook-close {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  background: var(--card-inset);
+  color: #ddd;
+}
+
+.cook-progress {
+  height: 4px;
+  background: #241d1a;
+  flex: none;
+}
+.cook-progress > div {
+  height: 4px;
+  background: var(--orange);
+  transition: width 0.2s ease;
+}
+
+.cook-body {
+  padding: 40px 44px;
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  min-height: 260px;
+  flex: 1;
+  overflow: auto;
+}
+
+.cook-kicker {
+  font-family: var(--font-display);
+  font-variant: all-small-caps;
+  letter-spacing: 1.6px;
+  font-size: 16px;
+  color: var(--text-mute);
+}
+
+.cook-step {
+  font-size: 34px;
+  line-height: 1.4;
+  font-weight: 600;
+  color: #fff;
+  text-wrap: pretty;
+}
+
+.cook-chip-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cook-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px;
+}
+
+.cook-chip-group {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.cook-chip-note {
+  font-weight: 500;
+  color: var(--text-muted);
+}
+.cook-chip-note::before {
+  content: " · ";
+}
+
+.cook-chip {
+  padding: 9px 16px;
+  border-radius: 999px;
+  background: #1d2a20;
+  border: 1px solid #2f5a3c;
+  font-size: 16px;
+  color: var(--green);
+  font-weight: 600;
+}
+
+.cook-peek {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 44px 20px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  border: 1px solid var(--line-bar);
+  background: #1b1615;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  flex: none;
+}
+.cook-peek:hover {
+  background: #221b19;
+  border-color: #4a3a33;
+}
+.cook-peek.is-last {
+  cursor: default;
+}
+.cook-peek-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cook-peek-label {
+  font-family: var(--font-display);
+  font-variant: all-small-caps;
+  letter-spacing: 1.4px;
+  font-size: 14px;
+  color: var(--orange);
+}
+.cook-peek-text {
+  font-size: 15px;
+  line-height: 1.4;
+  color: #b9b2ae;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.cook-peek > svg {
+  flex: none;
+  color: var(--text-mute);
+}
+
+.cook-nav {
+  display: flex;
+  gap: 14px;
+  padding: 0 44px 36px;
+  flex: none;
+}
+.cook-prev {
+  padding: 0 28px;
+  height: 56px;
+  background: var(--card-inset);
+  color: #ddd;
+  font-size: 14px;
+}
+.cook-next {
+  flex: 1;
+  height: 56px;
+  padding: 0;
+  font-size: 15px;
+}

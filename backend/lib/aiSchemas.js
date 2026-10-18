@@ -1,3 +1,4 @@
+const { z } = require("zod");
 const { Type } = require("./aiClient");
 
 const AI_ALLOWED_UNITS = [
@@ -79,6 +80,28 @@ const OPTIONS_SCHEMA = {
   required: ["options"],
 };
 
+// The responseSchema above steers the model; these check what actually came back.
+const recipeOutput = z.object({
+  name: z.string(),
+  servings: z.number().nonnegative(),
+  time_minutes: z.number().nonnegative(),
+  ingredients: z.array(
+    z.object({
+      name: z.string(),
+      amount: z.number(),
+      unit: z.string(),
+      group: z.string().optional(),
+      note: z.string().optional(),
+    }),
+  ),
+  steps: z.array(z.string()),
+});
+
+const RECIPE_OUTPUT = recipeOutput;
+const FRIDGE_RECIPE_OUTPUT = recipeOutput.extend({ feasible: z.boolean() });
+const URL_RECIPE_OUTPUT = recipeOutput.extend({ found: z.boolean() });
+const OPTIONS_OUTPUT = z.object({ options: z.array(z.string()) });
+
 const SYSTEM_PROMPT = [
   "Te egy profi séf asszisztens vagy.",
   "Minden szöveges mezőt kizárólag magyarul írj: az étel nevét, a hozzávalókat és az elkészítési lépéseket is.",
@@ -94,5 +117,9 @@ module.exports = {
   FRIDGE_RECIPE_SCHEMA,
   URL_RECIPE_SCHEMA,
   OPTIONS_SCHEMA,
+  RECIPE_OUTPUT,
+  FRIDGE_RECIPE_OUTPUT,
+  URL_RECIPE_OUTPUT,
+  OPTIONS_OUTPUT,
   SYSTEM_PROMPT,
 };

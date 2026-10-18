@@ -67,6 +67,7 @@ async function generateJson({
   system,
   prompt,
   schema,
+  output,
   maxTokens = 4096,
   temperature = 0.2,
 }) {
@@ -84,14 +85,24 @@ async function generateJson({
     });
 
     const text = response.text;
+    let json;
     try {
-      return JSON.parse(text);
+      json = JSON.parse(text);
     } catch {
       const err = new Error("Model response was not valid JSON");
       err.code = "AI_INVALID_JSON";
       err.raw = text;
       throw err;
     }
+    if (!output) return json;
+    const checked = output.safeParse(json);
+    if (!checked.success) {
+      const err = new Error("Model response did not match the expected shape");
+      err.code = "AI_INVALID_JSON";
+      err.raw = text;
+      throw err;
+    }
+    return checked.data;
   } catch (err) {
     const classified = classifyAiError(err);
     if (classified) throw classified;

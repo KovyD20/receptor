@@ -55,7 +55,8 @@ router.get("/catalog", async (req, res) => {
 
     return res.json({ categories: payload });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    console.error("Pantry catalog query failed:", err.message);
+    return res.status(500).json({ error: "Could not load the pantry catalog" });
   }
 });
 

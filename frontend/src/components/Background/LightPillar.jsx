@@ -1,3 +1,4 @@
+// Adapted from the Light Pillar background in React Bits (https://reactbits.dev).
 import { useRef, useEffect, useState } from 'react';
 import * as THREE from 'three';
 import './LightPillar.css';

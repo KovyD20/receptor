@@ -12,10 +12,11 @@ router.get("/health", async (req, res) => {
       db_time: result.rows[0].db_time,
     });
   } catch (err) {
+    console.error("DB health check failed:", err.message);
     return res.status(500).json({
       status: "error",
       instance: process.env.INSTANCE_NAME || "local",
-      error: err.message,
+      error: "Database unreachable",
     });
   }
 });

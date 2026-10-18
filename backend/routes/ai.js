@@ -9,6 +9,10 @@ const {
   FRIDGE_RECIPE_SCHEMA,
   URL_RECIPE_SCHEMA,
   OPTIONS_SCHEMA,
+  RECIPE_OUTPUT,
+  FRIDGE_RECIPE_OUTPUT,
+  URL_RECIPE_OUTPUT,
+  OPTIONS_OUTPUT,
   SYSTEM_PROMPT,
 } = require("../lib/aiSchemas");
 const { catalogNamePrompt } = require("../lib/catalogNames");
@@ -23,7 +27,7 @@ router.use(aiLimiter);
 
 const itemSchema = z.object({
   name: z.string().trim().min(1).max(120),
-  amount: z.union([z.number(), z.string()]).optional(),
+  amount: z.union([z.number().finite(), z.string().max(20)]).optional(),
   unit: z.string().max(40).optional(),
 });
 
@@ -31,8 +35,10 @@ const recipeByNameSchema = z.object({
   name: z.string().trim().min(1).max(120),
 });
 
+const MAX_ITEMS = 100;
+
 const suggestFromFridgeSchema = z.object({
-  items: z.array(itemSchema).min(1),
+  items: z.array(itemSchema).min(1).max(MAX_ITEMS),
 });
 
 const recipeFromUrlSchema = z.object({
@@ -41,7 +47,7 @@ const recipeFromUrlSchema = z.object({
 
 const recipeFromFridgeSchema = z.object({
   name: z.string().trim().min(1).max(120),
-  items: z.array(itemSchema).min(1),
+  items: z.array(itemSchema).min(1).max(MAX_ITEMS),
 });
 
 async function withCatalogNames(prompt) {
@@ -54,11 +60,13 @@ function describeItems(items) {
     .join(", ");
 }
 
+// Typed errors carry a message written for the client; anything else stays in the log.
 function sendAiError(res, err, endpoint) {
   console.error(`AI error ${endpoint}:`, err.raw || err.message);
-  const payload = { error: err.message || "AI generation failed" };
+  const payload = {
+    error: err.code ? err.message : "AI generation failed",
+  };
   if (err.code) payload.code = err.code;
-  if (err.raw) payload.raw = err.raw;
   if (err.retryAfterSeconds) {
     payload.retry_after_seconds = err.retryAfterSeconds;
   }
@@ -78,6 +86,7 @@ router.post("/recipe-by-name", validate(recipeByNameSchema), async (req, res) =>
         `Készíts receptet az alábbi ételnév alapján: "${name}"`,
       ),
       schema: RECIPE_SCHEMA,
+      output: RECIPE_OUTPUT,
     });
     res.json({ recipe });
   } catch (err) {
@@ -96,6 +105,7 @@ router.post("/suggest-from-fridge", validate(suggestFromFridgeSchema), async (re
       system: SYSTEM_PROMPT,
       prompt,
       schema: OPTIONS_SCHEMA,
+      output: OPTIONS_OUTPUT,
     });
     res.json({ options: data.options || [] });
   } catch (err) {
@@ -119,6 +129,7 @@ router.post("/recipe-from-fridge", validate(recipeFromFridgeSchema), async (req,
       system: SYSTEM_PROMPT,
       prompt: await withCatalogNames(prompt),
       schema: FRIDGE_RECIPE_SCHEMA,
+      output: FRIDGE_RECIPE_OUTPUT,
     });
     if (!feasible) {
       return res.status(422).json({
@@ -180,6 +191,7 @@ router.post("/recipe-from-url", validate(recipeFromUrlSchema), async (req, res) 
       system: SYSTEM_PROMPT,
       prompt: await withCatalogNames(prompt),
       schema: URL_RECIPE_SCHEMA,
+      output: URL_RECIPE_OUTPUT,
       maxTokens: 6144,
     });
     if (!found) {

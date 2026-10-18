@@ -1,0 +1,135 @@
+.view {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.view-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: none;
+  flex-wrap: wrap;
+}
+
+.view-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.view-count {
+  font-size: 14px;
+  color: var(--text-mute);
+}
+
+.view-pill {
+  padding: 5px 14px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  color: color-mix(in srgb, var(--accent) 70%, #fff);
+}
+
+.view-spacer {
+  flex: 1;
+}
+
+.view-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.grid {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+}
+.grid-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.grid > .empty-state {
+  grid-column: 1 / -1;
+}
+
+.empty-state {
+  padding: 26px;
+  border-radius: 14px;
+  background: var(--card);
+  border: 1px dashed var(--line-dashed);
+  color: var(--text-dim);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.chip-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.sort-row {
+  flex: none;
+  overflow: visible;
+}
+
+.view-head .sort-row {
+  padding-right: 14px;
+  border-right: 1px solid var(--line);
+}
+
+.chip {
+  flex: none;
+  padding: 7px 15px;
+  border-radius: 999px;
+  border: 1px solid #3d3d3d;
+  background: var(--chip);
+  color: #b0b0b0;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.chip:hover {
+  filter: brightness(1.2);
+}
+.chip-fav {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.chip-fav:not(.is-active) {
+  color: var(--yellow);
+}
+
+.chip.is-active {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+}
+
+.chip-course {
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.chip[style*="--tag-accent"] {
+  border-color: color-mix(in srgb, var(--tag-accent) 55%, transparent);
+  color: var(--tag-accent);
+}
+.chip[style*="--tag-accent"].is-active {
+  background: color-mix(in srgb, var(--tag-accent) 20%, transparent);
+  border-color: var(--tag-accent);
+  color: var(--tag-accent);
+}
