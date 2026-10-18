@@ -8,7 +8,7 @@
 # variable marked `sync: false` (so no secret is ever committed).
 #
 # Note on database migrations: the pantry schema is applied from your dev machine with
-# `npm run db:setup` (see DEPLOY.md step 2), not on deploy. Render supports a
+# `npm run db:setup` (see the README), not on deploy. Render supports a
 # `preDeployCommand: npm run migrate` here if you would rather have it run on every
 # deploy - the migration is idempotent - but it adds a hard dependency on the database
 # being reachable at deploy time, and the schema rarely changes.
