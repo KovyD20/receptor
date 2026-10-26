@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="images/banner.svg" alt="Smart Kitchen: cook from what's already in your fridge" width="100%"/>
+  <img src="images/banner.png" alt="ReceptOR, Recept Operációs Rendszer (recipe operating system): cook from what's already in your fridge" width="100%"/>
 </p>
 
 <p align="center">
@@ -53,28 +53,9 @@ and a single column below 768 px.
 
 ## Architecture
 
-```mermaid
-flowchart LR
-    U([User<br/>phone / desktop]) --> SPA
-
-    subgraph Browser["Browser · Vercel"]
-        SPA[React SPA<br/>Vite · Firebase SDK]
-        Auth[Firebase Auth<br/>ID token]
-        FS[(Cloud Firestore<br/>per-user, real-time)]
-        SPA --> Auth
-        SPA --> FS
-    end
-
-    subgraph Server["Server · Render / Neon"]
-        API[Express API<br/>token check · rate limit]
-        AI[Google Gemini<br/>API key only here]
-        PG[(PostgreSQL<br/>pantry catalog)]
-        API --> AI
-        API --> PG
-    end
-
-    SPA -->|Bearer ID token| API
-```
+<p align="center">
+  <img src="images/architecture.png" alt="System architecture: the React SPA on Vercel talks to Firebase Auth and Cloud Firestore directly, and calls the Express API on Render with an ID token; the API uses Google Gemini and PostgreSQL on Neon" width="100%"/>
+</p>
 
 The browser talks to Firestore **directly**: that is what makes real-time sync work, and
 Firestore security rules scope access per user. The Express service exists for the two
