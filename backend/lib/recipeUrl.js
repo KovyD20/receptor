@@ -179,7 +179,12 @@ function requestOnce(url, deadline, allowLoopback) {
           "Accept-Encoding": "gzip, deflate, br",
         },
       },
-      resolve,
+      (response) => {
+        // From here readBounded owns the deadline; a socket timeout racing it
+        // would surface as URL_FETCH_FAILED instead of URL_TIMEOUT.
+        req.setTimeout(0);
+        resolve(response);
+      },
     );
 
     req.setTimeout(remaining, () => {
